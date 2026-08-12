@@ -1,3 +1,4 @@
+
 import re
 import streamlit as st
 import plotly.graph_objects as go
@@ -72,277 +73,149 @@ st.markdown('</div>', unsafe_allow_html=True)
 if reset:
     st.rerun()
 
-# ---------- NLP detector: contextual Indonesian pattern engine ----------
-# ---------- Robust Indonesian pattern detector ----------
-# Detector ini sengaja tidak bergantung pada satu kalimat/pola regex panjang.
-# Ia memakai kombinasi kata kunci, frasa, hubungan "diri vs orang lain",
-# konteks waktu, serta negasi sederhana.
-
-SELF_WORDS = [
-    "aku", "saya", "gue", "gua", "gw", "diriku", "diri saya", "hidup saya",
-    "hidupku", "kemampuan saya", "kemampuan aku"
-]
-OTHER_WORDS = [
-    "teman", "teman-teman", "mereka", "dia", "orang lain", "orang-orang",
-    "rekan", "kenalan", "seumuran", "sebaya", "teman sebaya"
-]
-SUCCESS_WORDS = [
-    "sukses", "berhasil", "prestasi", "pencapaian", "lulus", "diterima kerja",
-    "dapat kerja", "dapat pekerjaan", "naik jabatan", "promosi", "gaji besar",
-    "penghasilan", "menang", "juara", "wisuda", "menikah", "punya rumah",
-    "punya mobil", "punya bisnis", "buka usaha", "karier bagus", "mapan",
-    "mendapat pekerjaan", "mendapat kerja", "diterima kuliah", "masuk kampus"
-]
-EXPOSURE_WORDS = [
-    "melihat", "lihat", "melihat postingan", "postingan", "posting",
-    "instagram", "tiktok", "linkedin", "media sosial", "sosmed",
-    "mendengar", "dengar", "mengetahui", "tahu", "melihat kabar",
-    "melihat story", "story", "feed"
-]
-COMPARISON_WORDS = [
-    "dibanding", "dibandingkan", "perbandingan", "bandingkan",
-    "berbeda dengan", "tidak seperti", "seperti mereka", "kayak mereka",
-    "seperti teman", "kayak teman", "lebih rendah", "lebih tinggi",
-    "lebih sukses", "lebih maju", "lebih kaya", "lebih baik",
-    "kalah", "selevel", "setara", "sama seperti", "sementara",
-    "sedangkan", "kok mereka", "kenapa mereka", "kenapa aku",
-    "kenapa saya", "kapan aku", "kapan saya"
-]
-LAG_WORDS = [
-    "tertinggal", "ketinggalan", "terlambat", "belum mencapai",
-    "belum punya", "belum berhasil", "belum dapat", "belum mendapatkan",
-    "belum kerja", "belum bekerja", "belum lulus", "belum menikah",
-    "belum mapan", "belum sukses", "jalan di tempat", "stuck",
-    "tidak berkembang", "nggak berkembang", "gak berkembang",
-    "teman sudah", "mereka sudah", "orang lain sudah"
-]
-FUTURE_WORDS = [
-    "masa depan", "ke depan", "nanti", "besok", "tahun depan",
-    "karier", "karir", "pekerjaan", "hidup saya ke depan", "hidupku ke depan",
-    "akan", "rencana", "tujuan", "arah hidup"
-]
-UNCERTAINTY_WORDS = [
-    "takut", "khawatir", "cemas", "bingung", "ragu", "tidak yakin",
-    "nggak yakin", "gak yakin", "tidak tahu", "nggak tahu", "gak tahu",
-    "belum tahu", "entah", "was-was", "kepikiran", "takut gagal",
-    "takut tidak", "takut nggak", "takut gak"
-]
-NEGATIVE_SELF_WORDS = [
-    "gagal", "bodoh", "payah", "buruk", "jelek", "tidak mampu",
-    "nggak mampu", "gak mampu", "tidak cukup", "nggak cukup",
-    "gak cukup", "tidak berguna", "nggak berguna", "gak berguna",
-    "tidak layak", "nggak layak", "gak layak", "rendah diri",
-    "tidak pintar", "nggak pintar", "gak pintar", "tidak bagus",
-    "nggak bagus", "gak bagus", "mengecewakan", "tidak berharga",
-    "nggak berharga", "gak berharga", "payah banget", "aku gagal",
-    "saya gagal", "gue gagal", "aku bodoh", "saya bodoh", "aku payah",
-    "saya payah"
-]
-NEGATION_WORDS = [
-    "tidak", "tak", "bukan", "belum", "nggak", "gak", "ga", "gak pernah",
-    "nggak pernah", "tidak pernah"
-]
-CONTRAST = re.compile(r"\b(tetapi|namun|sedangkan|sementara|walaupun|meskipun)\b")
-CAUSAL = re.compile(r"\b(karena|sehingga|akibatnya|setelah|gara-gara|membuat|menyebabkan)\b")
+# ---------- NLP prototype v3: sentence + paragraph context ----------
+# Tidak sekadar mencocokkan kata. Sistem mencari pola hubungan antarkalimat,
+# kontras, sebab-akibat, self-reference, social reference, dan evaluasi.
+# Tetap rule-based prototype; untuk produksi dapat diganti/ditambah model transformer.
 
 INDICATORS = {
     "Achievement Exposure": {
-        "label": "Paparan terhadap pencapaian pihak lain.",
-        "primary": [OTHER_WORDS, SUCCESS_WORDS],
-        "support": [EXPOSURE_WORDS]
+        "evidence": [
+            r"(teman|orang lain|mereka|dia|rekan|kenalan).{0,80}(sukses|berhasil|prestasi|pencapaian|diterima kerja|naik jabatan|gaji|lulus|menang)",
+            r"(melihat|melihat postingan|membaca|mendengar|mengetahui|menyaksikan).{0,80}(sukses|berhasil|prestasi|pencapaian)"
+        ],
+        "label": "Paparan terhadap pencapaian pihak lain."
     },
     "Social Comparison": {
-        "label": "Perbandingan eksplisit atau implisit antara diri dan pihak lain.",
-        "primary": [SELF_WORDS, OTHER_WORDS],
-        "support": [COMPARISON_WORDS]
+        "evidence": [
+            r"(aku|saya|diriku|diri saya).{0,80}(dibanding|berbeda dengan|kalah dari|lebih rendah|tidak sebaik|tidak seperti).{0,80}(mereka|dia|teman|orang lain)",
+            r"(mereka|dia|teman|orang lain).{0,60}(lebih sukses|lebih maju|lebih kaya|lebih baik).{0,60}(daripada|dibanding|sedangkan|sementara).{0,60}(aku|saya)",
+            r"(seumuran|satu usia|umur kami sama).{0,100}(sedangkan|sementara|tetapi).{0,100}(aku|saya)"
+        ],
+        "label": "Perbandingan eksplisit antara diri dan pihak lain."
     },
     "Perceived Lagging": {
-        "label": "Persepsi bahwa perkembangan diri tertinggal dari target atau kelompok pembanding.",
-        "primary": [LAG_WORDS],
-        "support": [SELF_WORDS, OTHER_WORDS, SUCCESS_WORDS]
+        "evidence": [
+            r"(aku|saya|diriku|diri saya).{0,80}(merasa|terasa|sepertinya).{0,50}(tertinggal|ketinggalan|terlambat)",
+            r"(aku|saya).{0,80}(belum|masih belum).{0,80}(punya|mencapai|mendapatkan|berhasil).{0,100}(seperti|selevel|seusia|dibanding)",
+            r"(mereka|teman|orang lain).{0,100}(sudah|telah).{0,100}(sedangkan|sementara).{0,100}(aku|saya)"
+        ],
+        "label": "Persepsi bahwa perkembangan diri tertinggal dari target atau kelompok pembanding."
     },
     "Future Uncertainty": {
-        "label": "Ketidakpastian atau kekhawatiran yang diarahkan ke masa depan.",
-        "primary": [UNCERTAINTY_WORDS],
-        "support": [FUTURE_WORDS]
+        "evidence": [
+            r"(aku|saya).{0,80}(takut|khawatir|cemas|bingung|tidak yakin).{0,100}(masa depan|ke depan|nanti|karier|pekerjaan)",
+            r"(aku|saya).{0,80}(tidak tahu|belum tahu).{0,100}(harus|mau|akan).{0,100}(ke mana|bagaimana|apa yang dilakukan)",
+            r"(takut|khawatir|cemas).{0,80}(gagal|tidak berhasil|tidak punya masa depan)"
+        ],
+        "label": "Ketidakpastian atau kekhawatiran yang diarahkan ke masa depan."
     },
     "Negative Self-Evaluation": {
-        "label": "Evaluasi negatif yang diarahkan kepada diri sendiri.",
-        "primary": [NEGATIVE_SELF_WORDS],
-        "support": [SELF_WORDS]
+        "evidence": [
+            r"(aku|saya|diriku|diri saya).{0,60}(tidak cukup|tidak mampu|tidak berguna|bodoh|buruk|gagal|mengecewakan|rendah diri)",
+            r"(aku|saya).{0,80}(merasa|menganggap|menilai).{0,80}(gagal|tidak mampu|tidak cukup|tidak bagus|tidak berguna)",
+            r"(aku|saya).{0,80}(tidak percaya diri|meragukan kemampuan|merasa tidak layak)"
+        ],
+        "label": "Evaluasi negatif yang diarahkan kepada diri sendiri."
     }
 }
 
-def _contains_phrase(text, phrase):
-    # Phrase matching dengan batas kata agar "gagal" tidak match ke kata lain.
-    return re.search(r"(?<!\w)" + re.escape(phrase) + r"(?!\w)", text) is not None
-
-def _token_positions(text, phrase):
-    return [m.start() for m in re.finditer(r"(?<!\w)" + re.escape(phrase) + r"(?!\w)", text)]
-
-def _is_negated(text, pos, lookback=45):
-    before = text[max(0, pos-lookback):pos]
-    # Negasi sangat dekat dengan kata target -> abaikan sebagai bukti positif.
-    return any(_contains_phrase(before, n) for n in NEGATION_WORDS)
-
-def _hit_phrases(text, phrases, ignore_negation=False):
-    hits = []
-    for phrase in phrases:
-        for pos in _token_positions(text, phrase):
-            if ignore_negation or not _is_negated(text, pos):
-                hits.append(phrase)
-                break
-    return hits
-
-def _has_any(text, phrases):
-    return any(_contains_phrase(text, p) for p in phrases)
-
-def _distance_match(text, group_a, group_b, window=90):
-    apos = []
-    bpos = []
-    for p in group_a:
-        apos.extend(_token_positions(text, p))
-    for p in group_b:
-        bpos.extend(_token_positions(text, p))
-    return any(abs(a-b) <= window for a in apos for b in bpos)
-
-def _evidence_sentences(sentences, phrases, limit=3):
-    found = []
-    for i, sent in enumerate(sentences):
-        if any(_contains_phrase(sent, p) for p in phrases):
-            found.append((i+1, sent))
-            if len(found) >= limit:
-                break
-    return found
+CONTRAST = re.compile(r"\b(tetapi|namun|sedangkan|sementara|walaupun|meskipun)\b")
+CAUSAL = re.compile(r"\b(karena|sehingga|akibatnya|setelah|gara-gara|membuat|menyebabkan)\b")
+SELF = re.compile(r"\b(aku|diriku|diri saya|saya sendiri)\b|\bsaya\b(?!\s+(teman|kakak|adik|ibu|ayah|orang tua))")
+OTHERS = re.compile(r"\b(teman|mereka|dia|orang lain|rekan|kenalan)\b")
+NEGATION = re.compile(r"\b(tidak|tak|bukan|belum|tanpa)\b")
 
 def split_sentences(text):
     text = re.sub(r"\s+", " ", text.strip())
-    # Teks pendek tanpa tanda baca tetap dianggap satu kalimat.
     return [x.strip() for x in re.split(r"(?<=[.!?])\s+|[\n]+", text) if x.strip()]
 
 def normalize(text):
-    text = text.lower()
-    text = text.replace("’", "'")
-    text = re.sub(r"[^a-zA-ZÀ-ÿ0-9\s.!?']", " ", text)
-    text = text.replace("-", " ")
-    text = re.sub(r"\s+", " ", text).strip()
-    return text
+    return re.sub(r"\s+", " ", re.sub(r"[^a-zA-ZÀ-ÿ0-9\s.!?]", " ", text.lower())).strip()
+
+def sentence_evidence(sentences, patterns):
+    found = []
+    for i, sent in enumerate(sentences):
+        for pat in patterns:
+            if re.search(pat, sent):
+                found.append((i + 1, sent))
+                break
+    return found
 
 def contextual_links(sentences):
     links = []
     for i in range(len(sentences) - 1):
         pair = sentences[i] + " " + sentences[i+1]
-        if (
-            _distance_match(pair, SELF_WORDS, OTHER_WORDS, 110)
-            or CONTRAST.search(pair)
-            or CAUSAL.search(pair)
-        ):
-            links.append((i+1, i+2, pair))
+        if (SELF.search(pair) and OTHERS.search(pair)) or CONTRAST.search(pair) or CAUSAL.search(pair):
+            links.append((i + 1, i + 2, pair))
     return links
 
 def score_indicator(name, sentences, links):
+    cfg = INDICATORS[name]
+    evidence = sentence_evidence(sentences, cfg["evidence"])
     joined = " ".join(sentences)
-    if not joined:
-        return 0.0, []
 
-    evidence_phrases = []
-    score = 0.0
+    # Contextual patterns: these capture natural Indonesian phrasing where
+    # the relationship is clear even when no explicit "aku vs mereka" phrase exists.
+    contextual = {
+        "Achievement Exposure": [
+            r"\b(teman|orang lain|mereka|dia|rekan)\b.{0,120}\b(sudah|telah|punya|memiliki|mendapat|berhasil|sukses|lulus|naik|diterima)\b",
+            r"\b(melihat|lihat|melihat postingan|mendengar|tahu|mengetahui)\b.{0,120}\b(teman|orang lain|mereka|dia)\b.{0,100}\b(sukses|berhasil|punya|memiliki|pencapaian|prestasi)\b"
+        ],
+        "Social Comparison": [
+            r"\b(kapan|kapan ya|ingin|pengen|semoga)\b.{0,60}\b(bisa|dapat|punya|memiliki|seperti|kayak)\b.{0,80}\b(teman|mereka|dia|orang lain)\b",
+            r"\b(seperti|kayak|sama seperti|sebanding dengan)\b.{0,80}\b(teman|mereka|dia|orang lain)\b",
+            r"\b(teman|mereka|dia|orang lain)\b.{0,100}\b(sudah|telah|punya|memiliki)\b.{0,100}\b(kapan|ingin|pengen|bisa)\b"
+        ],
+        "Perceived Lagging": [
+            r"\b(teman|mereka|dia|orang lain)\b.{0,80}\b(sudah|telah)\b.{0,100}\b(kapan|kapan ya|sementara|sedangkan)\b",
+            r"\b(kapan|kapan ya)\b.{0,80}\b(bisa|punya|memiliki|mencapai)\b.{0,100}\b(seperti|kayak|teman|mereka)\b",
+            r"\b(umur|usia)\b.{0,60}\b(20|21|22|23|24|25|26|27|28|29|30)\b.{0,120}\b(sudah|telah|punya|memiliki)\b"
+        ],
+        "Future Uncertainty": [
+            r"\b(kapan|kapan ya|entah kapan|belum tahu|tidak tahu)\b.{0,100}\b(bisa|akan|mampu|punya|mencapai|mendapat)\b",
+            r"\b(nggak tahu|gak tahu|tidak tahu|belum tahu)\b.{0,100}\b(masa depan|ke depan|nanti|karier|pekerjaan|hidup)\b"
+        ],
+        "Negative Self-Evaluation": [
+            r"\b(aku|saya|diriku|diri saya)\b.{0,80}\b(gagal|bodoh|buruk|tidak mampu|nggak mampu|gak mampu|tidak cukup|nggak cukup|tidak berguna|tidak layak)\b",
+            r"\b(aku|saya)\b.{0,80}\b(lebih rendah|kalah|payah|jelek)\b"
+        ]
+    }
 
-    if name == "Achievement Exposure":
-        other_success = _distance_match(joined, OTHER_WORDS, SUCCESS_WORDS, 120)
-        exposure_other = _distance_match(joined, EXPOSURE_WORDS, OTHER_WORDS, 120)
-        exposure_success = _distance_match(joined, EXPOSURE_WORDS, SUCCESS_WORDS, 150)
+    contextual_hits = []
+    for pat in contextual.get(name, []):
+        m = re.search(pat, joined)
+        if m:
+            contextual_hits.append(m.group(0))
 
-        if other_success:
-            score += 0.50
-            evidence_phrases += _hit_phrases(joined, OTHER_WORDS, ignore_negation=True)
-            evidence_phrases += _hit_phrases(joined, SUCCESS_WORDS, ignore_negation=True)
-        if exposure_other:
-            score += 0.25
-            evidence_phrases += _hit_phrases(joined, EXPOSURE_WORDS, ignore_negation=True)
-        if exposure_success:
-            score += 0.15
-            evidence_phrases += _hit_phrases(joined, EXPOSURE_WORDS, ignore_negation=True)
+    # Merge evidence from exact sentence patterns and contextual paragraph patterns.
+    if contextual_hits:
+        for hit in contextual_hits:
+            # Attach the nearest sentence as evidence.
+            nearest = next(((i+1, sent) for i, sent in enumerate(sentences) if hit[:25] in sent), None)
+            if nearest:
+                evidence.append(nearest)
+            elif sentences:
+                evidence.append((1, sentences[0]))
 
-    elif name == "Social Comparison":
-        self_other = _distance_match(joined, SELF_WORDS, OTHER_WORDS, 120)
-        comparison = _hit_phrases(joined, COMPARISON_WORDS)
-        comparative = bool(re.search(r"\b(lebih|kurang|kalah|seperti|kayak|dibanding)\b", joined))
-        contrast = bool(CONTRAST.search(joined))
+    evidence = list(dict.fromkeys(evidence))
 
-        if self_other:
-            score += 0.35
-            evidence_phrases += _hit_phrases(joined, SELF_WORDS, ignore_negation=True)
-            evidence_phrases += _hit_phrases(joined, OTHER_WORDS, ignore_negation=True)
-        if comparison:
-            score += min(0.45, 0.18 * len(comparison))
-            evidence_phrases += comparison
-        if comparative:
-            score += 0.10
-        if contrast and self_other:
-            score += 0.08
-
-    elif name == "Perceived Lagging":
-        lag = _hit_phrases(joined, LAG_WORDS, ignore_negation=True)
-        self_present = _has_any(joined, SELF_WORDS)
-        others_success = _distance_match(joined, OTHER_WORDS, SUCCESS_WORDS, 120)
-        self_not_yet = _distance_match(
-            joined, SELF_WORDS,
-            ["belum", "masih", "belum bisa", "belum punya", "belum dapat"],
-            75
-        )
-
-        if lag:
-            score += min(0.65, 0.32 * len(lag))
-            evidence_phrases += lag
-        if self_present and lag:
-            score += 0.10
-            evidence_phrases += _hit_phrases(joined, SELF_WORDS, ignore_negation=True)
-        if others_success and self_not_yet:
-            score += 0.25
-            evidence_phrases += _hit_phrases(joined, OTHER_WORDS, ignore_negation=True)
-            evidence_phrases += _hit_phrases(joined, SUCCESS_WORDS, ignore_negation=True)
-
-    elif name == "Future Uncertainty":
-        uncertainty = _hit_phrases(joined, UNCERTAINTY_WORDS)
-        future = _hit_phrases(joined, FUTURE_WORDS, ignore_negation=True)
-        question_future = bool(
-            re.search(r"\b(kapan|bagaimana|gimana|entah)\b", joined)
-        ) and bool(future)
-        self_present = _has_any(joined, SELF_WORDS)
-
-        if uncertainty:
-            score += min(0.62, 0.28 * len(uncertainty))
-            evidence_phrases += uncertainty
-        if future:
-            score += 0.22
-            evidence_phrases += future
-        if question_future:
-            score += 0.10
-        if self_present and uncertainty:
-            score += 0.06
-            evidence_phrases += _hit_phrases(joined, SELF_WORDS, ignore_negation=True)
-
-    else:  # Negative Self-Evaluation
-        negative = _hit_phrases(joined, NEGATIVE_SELF_WORDS)
-        self_negative = _distance_match(joined, SELF_WORDS, NEGATIVE_SELF_WORDS, 85)
-
-        if self_negative:
-            score += 0.68
-            evidence_phrases += _hit_phrases(joined, SELF_WORDS, ignore_negation=True)
-            evidence_phrases += negative
-        elif negative and _has_any(joined, SELF_WORDS):
-            score += 0.50
-            evidence_phrases += negative
-        elif negative:
-            score += 0.20
-            evidence_phrases += negative
-
-    evidence_phrases = list(dict.fromkeys(evidence_phrases))
-    evidence = _evidence_sentences(sentences, evidence_phrases) if evidence_phrases else []
-
+    # Scoring is evidence-driven. One contextual relation can produce a meaningful
+    # signal, but a single generic keyword cannot.
+    score = min(0.80, len(evidence) * 0.27)
+    if contextual_hits:
+        score = max(score, 0.42)
     if evidence and links:
-        score += min(0.08, 0.03 * len(links))
+        score += min(0.15, 0.05 * len(links))
+
+    # Strong self/other relation for comparison and lagging.
+    if name in ("Social Comparison", "Perceived Lagging"):
+        relation = (
+            re.search(r"\b(seperti|kayak|dibanding|berbeda dengan|lebih .{0,20} daripada)\b", joined)
+            and re.search(r"\b(teman|mereka|dia|orang lain)\b", joined)
+        )
+        if relation:
+            score += 0.12
 
     return round(min(score, 1.0), 2), evidence
 
@@ -354,25 +227,18 @@ def analyze_text(t):
     for name in INDICATORS:
         scores[name], evidence[name] = score_indicator(name, sentences, links)
 
-    ranked = sorted(scores.values(), reverse=True)
-    # Overall menekankan indikator terkuat agar satu pola yang jelas tidak
-    # "tenggelam" karena indikator lain memang tidak relevan.
-    if ranked and ranked[0] > 0:
-        overall_score = ranked[0] * 0.70 + (ranked[1] if len(ranked) > 1 else 0) * 0.30
-        overall = round(overall_score * 100)
-    else:
-        overall = 0
     total = sum(scores.values())
-    peak = max(scores, key=scores.get) if total else "Belum terdeteksi"
+    overall = round(total / len(scores) * 100)
+    peak = max(scores, key=scores.get) if total > 0 else "Belum terdeteksi"
     level = "Rendah" if overall < 35 else "Sedang" if overall < 65 else "Tinggi"
     return scores, evidence, overall, level, peak, sentences, links
 
-if analyze and text.strip():
+if analyze:
     scores, evidence, overall, level, peak, sentences, links = analyze_text(text)
 else:
     scores = {k: 0.0 for k in INDICATORS}
     evidence = {k: [] for k in INDICATORS}
-    overall, level, peak, sentences, links = 0, "Belum dianalisis", "Belum dianalisis", [], []
+    overall, level, peak, sentences, links = 0, "Rendah", "Belum dianalisis", [], []
 
 labels = list(scores.keys())
 colors = ["#20a9ff","#ffae32","#22c4ca","#7446f5","#f23883"]
@@ -395,11 +261,9 @@ with a:
     st.plotly_chart(fig,use_container_width=True,config={"displayModeBar":False})
 with b:
     st.markdown("### 📊 Hasil Analisis")
-    detected_count = sum(1 for v in scores.values() if v >= 0.35)
     st.markdown(f"Pola yang terdeteksi: <span class='badge'>{peak}</span>",unsafe_allow_html=True)
-    st.caption(f"{detected_count} dari {len(scores)} indikator melewati ambang deteksi 35%.")
     if peak=="Belum dianalisis":
-        desc="Masukkan teks lalu tekan **ANALISIS TEKS**. Detector akan mencari kombinasi konteks, bukan hanya satu kata."
+        desc="Masukkan teks lalu tekan **ANALISIS TEKS**. SAED tidak mengisi skor secara otomatis agar hasil tidak menyesatkan."
     elif peak=="Achievement Exposure":
         desc="Teks menyebut paparan terhadap pencapaian pihak lain. Ini berbeda dari Social Comparison: paparan saja belum berarti pengguna membandingkan dirinya dengan orang lain."
     else:
@@ -413,35 +277,80 @@ st.markdown('<div class="card">', unsafe_allow_html=True)
 st.markdown("### 📊 Ringkasan Indikator")
 st.caption("Semakin tinggi skor, semakin kuat indikasi pola pada teks.")
 fig=go.Figure()
-percent_values = [round(v * 100) for v in scores.values()]
-fig.add_trace(go.Bar(x=labels,y=percent_values,text=[f"{v}%" for v in percent_values],
+fig.add_trace(go.Bar(x=labels,y=list(scores.values()),text=[f"{v:.2f}" for v in scores.values()],
                      textposition="outside",marker_color=colors))
-fig.update_yaxes(range=[0,105],dtick=20,ticksuffix="%")
+fig.update_yaxes(range=[0,1.12],dtick=.2)
 fig.update_layout(height=370,margin=dict(l=20,r=20,t=30,b=90),paper_bgcolor="rgba(0,0,0,0)",
                   plot_bgcolor="rgba(0,0,0,0)",font_color="#dbe6ff",showlegend=False)
 st.plotly_chart(fig,use_container_width=True,config={"displayModeBar":False})
 
+st.markdown("### ☷ Detail Indikator")
+cols=st.columns(2)
+for i,(k,v) in enumerate(scores.items()):
+    with cols[i%2]:
+        sev=severity(v)
+        st.markdown(f"""<div class="insight"><b>{k}</b>
+        <span style="float:right"><b>{sev}</b> · {v:.2f}</span>
+        <br><span class="small">{detail(k,v)}</span>
+        <br><span class="small">Bukti kalimat: {" | ".join([f"Kalimat {n}: {sent}" for n, sent in evidence.get(k, [])]) if evidence.get(k) else "Tidak ada bukti kalimat yang memenuhi pola."}</span></div>""",unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
 
-st.markdown("### 🎯 Persentase Indikator")
-gcols = st.columns(len(scores))
-for gcol, (glabel, gvalue) in zip(gcols, scores.items()):
-    with gcol:
-        gpct = int(round(gvalue * 100))
-        gauge_fig = go.Figure(go.Pie(
-            values=[gpct, 100-gpct],
-            hole=0.78,
-            textinfo="none",
-            marker=dict(colors=["#20cfff", "#182a58"]),
-            sort=False,
-            direction="clockwise",
-            rotation=270
-        ))
-        gauge_fig.update_layout(
-            height=180,
-            margin=dict(l=5,r=5,t=5,b=5),
-            showlegend=False,
-            paper_bgcolor="rgba(0,0,0,0)"),
-            annotations=[dict(
-                text=f"<b>{gpct}%</b><br><span style='font-size:10px'>{glabel}</span>",
-                x=0.5, y=0.5, showarrow=False,
-                font)]
+# ---------- Deep analysis ----------
+st.markdown('<div class="card">', unsafe_allow_html=True)
+st.markdown("### 🔍 Analisis Mendalam")
+peak_hits = evidence.get(peak, []) if peak not in ("Belum dianalisis", "Belum terdeteksi") else []
+peak_evidence_text = (
+    " | ".join([f"Kalimat {n}: {sent}" for n, sent in peak_hits])
+    if peak_hits else "Belum ada bukti kalimat spesifik."
+)
+patterns = [
+("🔵 Pola Utama", f"Indikator tertinggi: {peak} ({scores.get(peak,0):.2f}). Bukti kalimat: {peak_evidence_text}"),
+("🟠 Pembedaan Indikator", "Achievement Exposure hanya mengukur penyebutan/paparan terhadap pencapaian orang lain. Social Comparison baru naik jika teks menunjukkan tindakan atau penilaian membandingkan diri dengan orang lain."),
+("🟣 Konteks & Negasi", "Kata seperti 'tidak takut' atau 'tidak tertinggal' tidak seharusnya dihitung sama dengan pernyataan positif yang menunjukkan kekhawatiran. Prototype ini menggunakan pemeriksaan negasi sederhana."),
+("🟢 Batasan", "Skor berasal dari rule-based keyword/phrase matching. Untuk akurasi produksi, sistem sebaiknya dilatih dan diuji dengan dataset berlabel serta evaluasi precision, recall, F1, dan confusion matrix.")
+]
+for title, body in patterns:
+    st.markdown(f"<div class='insight'><b>{title}</b><br>{body}</div>",unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
+
+# ---------- Recommendations ----------
+st.markdown('<div class="tip">', unsafe_allow_html=True)
+st.markdown("### 🌱 Saran yang sesuai")
+st.write("Berdasarkan pola analisis, berikut beberapa saran yang dapat kamu terapkan:")
+recs=[]
+if scores["Achievement Exposure"] >= .35:
+    recs += ["Pisahkan fakta dari interpretasi: keberhasilan orang lain adalah fakta tentang mereka, bukan ukuran nilai dirimu.",
+             "Atur jeda dari konten pencapaian jika setelah melihatnya kamu mulai mengevaluasi hidup sendiri."]
+if scores["Social Comparison"] >= .35:
+    recs += ["Ketika membandingkan diri, tulis apa yang benar-benar kamu ketahui tentang hidupmu dan apa yang hanya asumsi tentang orang lain.",
+             "Ubah pertanyaan 'mengapa aku tidak seperti mereka?' menjadi 'langkah apa yang realistis untuk kondisiku sekarang?'"]
+if scores["Perceived Lagging"] >= .35:
+    recs += ["Tentukan milestone pribadi berdasarkan kondisi dan prioritasmu, bukan timeline teman sebaya.",
+             "Ukur progres dengan perubahan dari titik awalmu sendiri."]
+if scores["Negative Self-Evaluation"] >= .35:
+    recs += ["Ganti penilaian menyeluruh seperti 'aku gagal' dengan evaluasi spesifik tentang situasi yang belum berhasil.",
+             "Catat bukti kemampuan, usaha, dan kemajuan kecil agar evaluasi diri lebih seimbang."]
+if scores["Future Uncertainty"] >= .35:
+    recs += ["Pisahkan hal yang bisa dikendalikan hari ini dari hal yang belum bisa dipastikan.",
+             "Pilih satu tindakan kecil untuk 24 jam ke depan daripada mencoba memecahkan seluruh masa depan sekaligus."]
+if not recs:
+    recs = ["Belum ada indikator yang cukup kuat. Gunakan hasil ini sebagai refleksi, bukan label diri.",
+            "Jika ingin analisis lebih akurat, masukkan satu paragraf utuh agar hubungan antar-kalimat dapat dibaca."]
+
+for r in recs:
+    st.markdown(f"✅ {r}")
+st.markdown("<div style='margin-top:12px;padding:12px;border-radius:12px;background:#3b3a1d'>💡 <i>“Progres yang lambat tetaplah progres. Fokus pada perjalananmu sendiri.”</i></div>",unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
+
+with st.expander("🔎 Lihat proses analisis kalimat & paragraf"):
+    if sentences:
+        st.markdown("**Segmentasi kalimat:**")
+        for i, sent in enumerate(sentences, 1):
+            st.markdown(f"- **Kalimat {i}:** {sent}")
+        st.markdown(f"**Hubungan konteks terdeteksi:** {len(links)}")
+        for x, y, pair in links:
+            st.caption(f"Kalimat {x} ↔ {y}: konteks berpotensi saling terkait.")
+    else:
+        st.caption("Belum ada teks yang dianalisis.")
+
+st.markdown("<div style='text-align:center;color:#66759a;padding:25px'>SAED • Social Achievement Exposure Detector • Prototype NLP</div>",unsafe_allow_html=True)
