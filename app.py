@@ -75,7 +75,7 @@ with st.sidebar:
     st.markdown("ℹ️ Tentang SAED")
     st.markdown("---")
     st.info("SAED adalah prototipe NLP untuk membaca pola bahasa terkait pencapaian sosial, perbandingan diri, kekhawatiran masa depan, dan evaluasi diri.")
-    st.caption("© 2026 SAED • Prototype v2.2 • Futuristic Icons")
+    st.caption("© 2026 SAED • Prototype v2.3 • Futuristic Icons")
 
 st.markdown(f"""
 <div class="hero">
@@ -294,7 +294,7 @@ if analyze:
         st.session_state.saed_result = None
     else:
         st.session_state.saed_result = analyze_text(current)
-        st.success("✅ Teks berhasil dianalisis. Indikator, bukti kalimat, dan saran diperbarui.")
+        st.success("✅ Analisis berhasil. Hasil indikator dan saran diperbarui di bawah.")
 
 if st.session_state.saed_result:
     scores, evidence, overall, level, peak, sentences, links = st.session_state.saed_result
@@ -324,4 +324,4 @@ def detail(k, v, evidence_items):
         return base + " Belum ada bukti kalimat yang cukup kuat."
     strongest = max(evidence_items, key=lambda x: x["weight"])
     if k == "Achievement Exposure":
-        return f"Kalimat menunjukkan paparan"
+        return f"Kalimat menunjukkan paparan terhada
