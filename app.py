@@ -440,7 +440,7 @@ for gcol, (glabel, gvalue) in zip(gcols, scores.items()):
             height=180,
             margin=dict(l=5,r=5,t=5,b=5),
             showlegend=False,
-            paper_bgcolor="rgba(0,0,0,0)",
+            paper_bgcolor="rgba(0,0,0,0)"),
             annotations=[dict(
                 text=f"<b>{gpct}%</b><br><span style='font-size:10px'>{glabel}</span>",
                 x=0.5, y=0.5, showarrow=False,
