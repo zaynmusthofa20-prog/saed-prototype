@@ -73,91 +73,90 @@ if reset:
     st.session_state.saed_result = None
     st.rerun()
 
-# ---------- NLP engine v7: contextual sentence/paragraph analysis ----------
-# Analisis berbasis relasi makna dalam kalimat/paragraf, bukan satu keyword.
-# Prototype rule-based; bukan diagnosis psikologis.
+# ---------- NLP engine v11: multi-signal sentence + paragraph analysis ----------
+# Rule-based prototype: membaca hubungan kata, kalimat, negasi, kontras,
+# sebab-akibat, intensifier, dan pola antar-kalimat. Bukan diagnosis psikologis.
 
 INDICATORS = {
     "Achievement Exposure": {
-        "label": "Paparan terhadap pencapaian, keberhasilan, atau keunggulan pihak lain.",
+        "label": "Paparan terhadap pencapaian, keberhasilan, status, atau keunggulan pihak lain.",
         "patterns": [
-            r"\b(teman|orang lain|mereka|dia|lawan|rekan|kenalan)\b.{0,100}\b(sudah|telah|punya|memiliki|mendapat|berhasil|sukses|menang|lulus|diterima|naik jabatan|berpengalaman|lebih maju)\b",
-            r"\b(saya|aku)\b.{0,100}\b(melihat|melihat postingan|mendengar|mengetahui|tahu|menyadari)\b.{0,100}\b(teman|orang lain|mereka|dia)\b"
-        ],
-        "phrases": ["teman saya sudah", "orang lain sudah", "teman saya berhasil", "teman saya punya",
-                    "lawan saya berpengalaman", "teman saya lebih maju"]
-    },
-    "Social Comparison": {
-        "label": "Perbandingan antara kemampuan, kondisi, atau pencapaian diri dengan pihak lain.",
-        "patterns": [
-            r"\b(dibanding|di banding|dibandingkan|berbeda dengan|kalah dari|lebih rendah dari|tidak sebaik|tidak seperti)\b.{0,100}\b(saya|aku|diriku|diri saya|lawan|teman|mereka|dia)\b",
-            r"\b(saya|aku)\b.{0,100}\b(dibanding|di banding|dibandingkan|berbeda dengan|kalah dari)\b",
-            r"\b(lawan|teman|mereka|dia)\b.{0,100}\b(lebih berpengalaman|lebih sukses|lebih maju|lebih baik|lebih mampu|lebih hebat)\b.{0,100}\b(saya|aku)\b",
-            r"\b(saya|aku)\b.{0,100}\b(seperti|kayak|sama seperti)\b.{0,100}\b(teman|mereka|dia|orang lain)\b",
-            r"\b(kapan|kapan ya)\b.{0,80}\b(bisa|mampu|punya|memiliki|mencapai)\b.{0,80}\b(seperti|kayak)\b.{0,60}\b(teman|mereka|dia)\b"
-        ],
-        "phrases": ["dibanding saya", "di banding saya", "dibandingkan dengan saya",
-                    "lebih berpengalaman dari saya", "lebih berpengalaman dibanding saya",
-                    "seperti teman saya", "kalah dari"]
-    },
-    "Perceived Lagging": {
-        "label": "Perasaan bahwa perkembangan atau kemampuan diri tertinggal dari pihak pembanding.",
-        "patterns": [
-            r"\b(lawan|teman|mereka|dia)\b.{0,100}\b(sudah|telah|lebih|lebih dulu)\b.{0,100}\b(saya|aku)\b",
-            r"\b(saya|aku)\b.{0,80}\b(tertinggal|ketinggalan|terlambat|belum bisa|belum punya|masih belum)\b",
-            r"\b(kapan|kapan ya)\b.{0,100}\b(bisa|mampu|punya|memiliki|mencapai)\b.{0,100}\b(seperti|kayak|teman|mereka|dia)\b",
-            r"\b(umur|usia)\b.{0,60}\b(sudah|telah)\b.{0,100}\b(saya|aku|teman|mereka)\b"
-        ],
-        "phrases": ["tertinggal", "ketinggalan", "belum bisa", "masih belum",
-                    "kapan ya bisa seperti", "belum punya seperti"]
-    },
-    "Future Uncertainty": {
-        "label": "Kekhawatiran, keraguan, pertanyaan, atau ketidakpastian tentang hasil, kemampuan, waktu, atau keadaan yang akan datang.",
-        "patterns": [
-            # Emosi ketidakpastian + masa depan/hasil
-            r"\b(saya|aku)\b.{0,100}\b(khawatir|cemas|takut|ragu|bingung|waswas|gelisah)\b.{0,160}\b(akan|bisa|mampu|nanti|ke depan|masa depan|suatu hari|berhasil|menang|gagal|mencapai|mendapat|punya|memiliki)\b",
-            # "takut tidak..." / "khawatir tidak..." tanpa kata future eksplisit
-            r"\b(khawatir|cemas|takut|waswas|ragu)\b.{0,100}\b(tidak|nggak|gak|belum)\b.{0,100}\b(bisa|mampu|berhasil|menang|mencapai|mendapat|punya|memiliki|sempat)\b",
-            # Pertanyaan/ketidakpastian waktu dan kemungkinan
-            r"\b(kapan|kapan ya|kapan kira.?kira|entah kapan)\b.{0,140}\b(bisa|mampu|akan|mendapat|mencapai|punya|memiliki|berhasil|terjadi|tercapai)\b",
-            # Ketidakpastian eksplisit
-            r"\b(belum tahu|tidak tahu|nggak tahu|gak tahu|entah|tidak yakin|nggak yakin|gak yakin|belum yakin|masih ragu)\b.{0,160}\b(akan|bisa|mampu|nanti|ke depan|masa depan|berhasil|menang|gagal|mencapai|mendapat|punya|memiliki|terjadi)\b",
-            # "apakah saya..." / "bisa nggak..." / "akankah..."
-            r"\b(apakah|akankah)\b.{0,160}\b(saya|aku|kita)\b.{0,100}\b(bisa|mampu|berhasil|menang|mencapai|mendapat|punya|memiliki)\b",
-            r"\b(saya|aku|kita)\b.{0,100}\b(bisa nggak|bisa tidak|bisa gak|bisa kah|bisakah|mungkinkah)\b.{0,120}\b(nanti|ke depan|suatu hari|berhasil|menang|mencapai|mendapat|punya|memiliki)\b",
-            r"\b(saya|aku)\b.{0,100}\b(akan|tidak akan|mungkin akan|mungkin tidak akan)\b.{0,120}\b(berhasil|menang|gagal|kalah|mencapai|mendapat|punya|memiliki|terjadi)\b",
-            # Prediksi negatif masa depan
-            r"\b(saya|aku)\b.{0,100}\b(mungkin|kemungkinan|takutnya|jangan.?jangan)\b.{0,140}\b(gagal|kalah|tidak bisa|tidak mampu|tidak berhasil|tidak tercapai|tidak mendapat)\b",
-            r"\b(mungkin|kemungkinan|takutnya|jangan.?jangan)\b.{0,100}\b(saya|aku)\b.{0,140}\b(tidak bisa|tidak akan bisa|tidak mampu|tidak akan mampu|tidak berhasil|tidak akan berhasil|gagal|kalah|tidak tercapai|tidak mendapat)\b",
-            # Future-oriented goals where uncertainty is expressed by "belum"
-            r"\b(saya|aku)\b.{0,100}\b(belum|masih belum)\b.{0,100}\b(tahu|yakin|pasti|bisa|mampu)\b"
+            r"\b(teman|orang lain|mereka|dia|lawan|rekan|kenalan)\b.{0,140}\b(sudah|telah|punya|memiliki|mendapat|berhasil|sukses|menang|lulus|diterima|naik jabatan|berpengalaman|lebih maju|lebih hebat|lebih unggul)\b",
+            r"\b(saya|aku)\b.{0,120}\b(melihat|lihat|menonton|mendengar|mengetahui|tahu|menyadari|melihat postingan|melihat pencapaian)\b.{0,140}\b(teman|orang lain|mereka|dia)\b",
+            r"\b(postingan|unggahan|story|status|linkedin|instagram|media sosial)\b.{0,120}\b(sukses|lulus|wisuda|kerja|jabatan|prestasi|menang|penghasilan|pencapaian)\b"
         ],
         "phrases": [
-            "saya khawatir", "aku khawatir", "saya takut", "aku takut",
-            "saya cemas", "aku cemas", "saya ragu", "aku ragu",
-            "kapan ya bisa", "kapan kira-kira", "entah kapan",
-            "belum tahu", "tidak tahu", "nggak tahu", "gak tahu",
-            "tidak yakin", "nggak yakin", "gak yakin", "belum yakin",
-            "masih ragu", "apakah saya bisa", "bisakah saya",
-            "mungkinkah saya", "takutnya saya", "jangan-jangan saya"
+            "teman saya sudah","orang lain sudah","teman saya berhasil","teman saya punya",
+            "orang lain berhasil","melihat pencapaian orang lain","melihat postingan teman"
+        ]
+    },
+    "Social Comparison": {
+        "label": "Perbandingan eksplisit atau implisit antara diri dengan pihak lain.",
+        "patterns": [
+            r"\b(dibanding|dibandingkan|di banding|berbeda dengan|kalah dari|lebih rendah dari|tidak sebaik|tidak seperti|daripada)\b.{0,120}\b(saya|aku|diriku|diri saya|teman|mereka|dia|orang lain|lawan)\b",
+            r"\b(saya|aku)\b.{0,100}\b(dibanding|dibandingkan|di banding|berbeda dengan|kalah dari|daripada)\b",
+            r"\b(teman|mereka|dia|orang lain|lawan)\b.{0,100}\b(lebih berpengalaman|lebih sukses|lebih maju|lebih baik|lebih mampu|lebih hebat|lebih cepat|lebih pintar|lebih kaya)\b.{0,100}\b(saya|aku)\b",
+            r"\b(saya|aku)\b.{0,100}\b(seperti|kayak|sama seperti|selevel dengan|setara dengan)\b.{0,100}\b(teman|mereka|dia|orang lain)\b",
+            r"\b(kenapa|mengapa)\b.{0,120}\b(mereka|dia|teman|orang lain)\b.{0,100}\b(sudah|bisa|mampu|berhasil)\b.{0,100}\b(saya|aku)\b"
+        ],
+        "phrases": [
+            "dibanding saya","dibandingkan dengan saya","lebih berpengalaman dari saya",
+            "lebih sukses dari saya","lebih maju dari saya","seperti teman saya","kalah dari mereka"
+        ]
+    },
+    "Perceived Lagging": {
+        "label": "Perasaan tertinggal, terlambat, belum mencapai tahap tertentu, atau berada di belakang timeline orang lain.",
+        "patterns": [
+            r"\b(saya|aku)\b.{0,100}\b(tertinggal|ketinggalan|terlambat|belum sampai|belum mencapai|belum punya|belum bisa|masih belum|masih tertinggal|telat)\b",
+            r"\b(teman|mereka|dia|orang lain)\b.{0,120}\b(sudah|telah|lebih dulu|lebih cepat)\b.{0,120}\b(saya|aku)\b",
+            r"\b(umur|usia)\b.{0,100}\b(sudah|telah|seharusnya)\b.{0,120}\b(saya|aku|teman|mereka)\b",
+            r"\b(umur|usia)\b.{0,80}\b(25|26|27|28|29|30|31|32|33|34|35)\b.{0,120}\b(belum|masih)\b.{0,120}\b(kerja|lulus|menikah|punya|mencapai|sukses|mapan)\b",
+            r"\b(kapan|kapan ya)\b.{0,100}\b(bisa|mampu|punya|memiliki|mencapai)\b.{0,100}\b(seperti|kayak|selevel)\b.{0,100}\b(teman|mereka|dia|orang lain)\b"
+        ],
+        "phrases": [
+            "tertinggal","ketinggalan","masih tertinggal","belum bisa","masih belum",
+            "belum mencapai","belum punya","kapan ya bisa seperti"
+        ]
+    },
+    "Future Uncertainty": {
+        "label": "Kekhawatiran, keraguan, pertanyaan kemungkinan, atau ketidakpastian mengenai masa depan/hasil.",
+        "patterns": [
+            r"\b(saya|aku)\b.{0,120}\b(khawatir|cemas|takut|ragu|bingung|waswas|gelisah)\b.{0,180}\b(akan|bisa|mampu|nanti|ke depan|masa depan|suatu hari|berhasil|menang|gagal|mencapai|mendapat|punya|memiliki)\b",
+            r"\b(khawatir|cemas|takut|waswas|ragu)\b.{0,120}\b(tidak|nggak|gak|belum|mungkin tidak)\b.{0,120}\b(bisa|mampu|berhasil|menang|mencapai|mendapat|punya|memiliki|sempat)\b",
+            r"\b(kapan|kapan ya|kapan kira.?kira|entah kapan)\b.{0,160}\b(bisa|mampu|akan|mendapat|mencapai|punya|memiliki|berhasil|terjadi|tercapai)\b",
+            r"\b(belum tahu|tidak tahu|nggak tahu|gak tahu|entah|tidak yakin|nggak yakin|gak yakin|belum yakin|masih ragu)\b.{0,180}\b(akan|bisa|mampu|nanti|ke depan|masa depan|berhasil|menang|gagal|mencapai|mendapat|punya|memiliki|terjadi)\b",
+            r"\b(apakah|akankah|bisakah|mungkinkah)\b.{0,180}\b(saya|aku|kita)\b.{0,120}\b(bisa|mampu|berhasil|menang|mencapai|mendapat|punya|memiliki)\b",
+            r"\b(saya|aku)\b.{0,120}\b(mungkin|kemungkinan|takutnya|jangan.?jangan)\b.{0,160}\b(gagal|kalah|tidak bisa|tidak mampu|tidak berhasil|tidak tercapai|tidak mendapat)\b"
+        ],
+        "phrases": [
+            "saya khawatir","aku khawatir","saya takut","aku takut","saya cemas","aku cemas",
+            "saya ragu","aku ragu","kapan ya bisa","belum tahu","tidak yakin","belum yakin",
+            "masih ragu","apakah saya bisa","bisakah saya","mungkinkah saya","takutnya saya","jangan-jangan saya"
         ]
     },
     "Negative Self-Evaluation": {
-        "label": "Penilaian negatif yang diarahkan langsung kepada nilai/kemampuan diri.",
+        "label": "Penilaian negatif yang diarahkan langsung kepada nilai, kemampuan, atau kelayakan diri.",
         "patterns": [
-            r"\b(saya|aku)\b.{0,80}\b(gagal|bodoh|buruk|tidak mampu|nggak mampu|gak mampu|tidak cukup|tidak berguna|tidak layak|payah|jelek|rendah diri)\b",
-            r"\b(saya|aku)\b.{0,80}\b(merasa|menganggap|menilai)\b.{0,80}\b(gagal|tidak mampu|tidak cukup|tidak layak|tidak berguna|buruk)\b"
+            r"\b(saya|aku|diriku|diri saya)\b.{0,100}\b(gagal|bodoh|buruk|tidak mampu|nggak mampu|gak mampu|tidak cukup|tidak berguna|tidak layak|payah|jelek|rendah diri|tidak pintar|tidak hebat|tidak kompeten)\b",
+            r"\b(saya|aku)\b.{0,100}\b(merasa|menganggap|menilai|melihat diri)\b.{0,100}\b(gagal|tidak mampu|tidak cukup|tidak layak|tidak berguna|buruk|payah|tidak pintar)\b",
+            r"\b(saya|aku)\b.{0,100}\b(bukan siapa-siapa|tidak ada gunanya|tidak punya kemampuan|tidak punya masa depan)\b"
         ],
-        "phrases": ["saya gagal", "saya bodoh", "saya tidak mampu", "saya tidak cukup", "saya tidak layak"]
+        "phrases": [
+            "saya gagal","aku gagal","saya bodoh","saya tidak mampu","saya tidak cukup",
+            "saya tidak layak","saya payah","saya tidak pintar","saya tidak kompeten"
+        ]
     }
 }
 
-CONTRAST = re.compile(r"\b(tetapi|namun|sedangkan|sementara|walaupun|meskipun|padahal)\b")
-CAUSE = re.compile(r"\b(karena|sehingga|akibatnya|setelah|gara-gara|membuat|menyebabkan)\b")
+CONTRAST = re.compile(r"\b(tetapi|namun|sedangkan|sementara|walaupun|meskipun|padahal|hanya saja)\b")
+CAUSE = re.compile(r"\b(karena|sehingga|akibatnya|setelah|gara-gara|membuat|menyebabkan|oleh karena)\b")
 SELF = re.compile(r"\b(aku|saya|diriku|diri saya)\b")
 OTHER = re.compile(r"\b(teman|mereka|dia|orang lain|lawan|rekan|kenalan)\b")
 WORRY = re.compile(r"\b(khawatir|cemas|takut|ragu|bingung|waswas|gelisah)\b")
-NEGATIVE_SELF = re.compile(r"\b(tidak mampu|nggak mampu|gak mampu|tidak cukup|tidak berguna|tidak layak|gagal|bodoh|buruk|payah)\b")
+NEGATIVE_SELF = re.compile(r"\b(tidak mampu|nggak mampu|gak mampu|tidak cukup|tidak berguna|tidak layak|gagal|bodoh|buruk|payah|tidak pintar|tidak kompeten)\b")
+NEGATION = re.compile(r"\b(tidak|tak|bukan|belum|nggak|gak|jangan)\b")
+INTENSIFIER = re.compile(r"\b(sangat|banget|sekali|terlalu|benar-benar|benar benar|begitu|makin|semakin)\b")
+UNCERTAINTY = re.compile(r"\b(mungkin|mungkin saja|kemungkinan|entah|belum tahu|tidak yakin|nggak yakin|gak yakin|masih ragu|kapan|apakah|akankah|bisakah|mungkinkah)\b")
 
 def normalize(text):
     text = text.lower().replace("di banding", "dibanding")
@@ -173,61 +172,120 @@ def find_evidence(sentences, patterns):
             found.append((i, sent))
     return found
 
+def sentence_signal(sent):
+    return {
+        "self": bool(SELF.search(sent)),
+        "other": bool(OTHER.search(sent)),
+        "worry": bool(WORRY.search(sent)),
+        "negative_self": bool(NEGATIVE_SELF.search(sent)),
+        "uncertainty": bool(UNCERTAINTY.search(sent)),
+        "contrast": bool(CONTRAST.search(sent)),
+        "cause": bool(CAUSE.search(sent)),
+        "negation": bool(NEGATION.search(sent)),
+        "intensifier": bool(INTENSIFIER.search(sent)),
+    }
+
 def context_links(sentences):
     links = []
     for i in range(len(sentences)-1):
-        pair = sentences[i] + " " + sentences[i+1]
-        if (SELF.search(pair) and OTHER.search(pair)) or CONTRAST.search(pair) or CAUSE.search(pair):
-            links.append((i+1, i+2))
+        a, b = sentences[i], sentences[i+1]
+        pair = a + " " + b
+        sa, sb = sentence_signal(a), sentence_signal(b)
+        reasons = []
+        if (sa["self"] and sb["other"]) or (sa["other"] and sb["self"]):
+            reasons.append("diri ↔ pihak lain")
+        if sa["worry"] or sb["worry"]:
+            reasons.append("emosi ↔ konteks")
+        if CONTRAST.search(pair):
+            reasons.append("kontras")
+        if CAUSE.search(pair):
+            reasons.append("sebab-akibat")
+        if sa["uncertainty"] or sb["uncertainty"]:
+            reasons.append("ketidakpastian")
+        if reasons:
+            links.append((i+1, i+2, ", ".join(dict.fromkeys(reasons))))
     return links
+
+def negation_penalty(sent):
+    # Negasi dekat dengan indikator menurunkan skor agar "tidak takut" tidak
+    # dibaca sama seperti "takut". Tidak dimaksudkan sebagai parser bahasa penuh.
+    return 0.18 if re.search(r"\b(tidak|tak|bukan|jangan|nggak|gak)\b.{0,35}\b(khawatir|cemas|takut|tertinggal|gagal|bodoh|membandingkan)\b", sent) else 0
 
 def score_indicator(name, sentences, full_text, links):
     cfg = INDICATORS[name]
     evidence = find_evidence(sentences, cfg["patterns"])
     phrase_hits = [p for p in cfg["phrases"] if p in full_text]
 
-    # Evidence from a natural phrase may span a whole sentence.
-    if phrase_hits and not evidence and sentences:
+    if phrase_hits and not evidence:
         evidence = [(i, sent) for i, sent in enumerate(sentences, 1)
                     if any(p in sent for p in phrase_hits)]
 
     score = 0.0
     if evidence:
-        score += min(0.55, 0.32 + 0.10 * (len(evidence)-1))
+        score += min(0.58, 0.30 + 0.09 * len(evidence))
     if phrase_hits:
-        score += min(0.18, 0.06 * len(phrase_hits))
-    if evidence and links:
-        score += min(0.12, 0.04 * len(links))
+        score += min(0.16, 0.04 * len(phrase_hits))
 
-    # Contextual reinforcement: worry + inability is future uncertainty,
-    # while comparison with an opponent is social comparison.
-    if name == "Future Uncertainty":
-        # Sangat peka terhadap sinyal uncertainty, tetapi tetap membutuhkan
-        # orientasi hasil/waktu/kemungkinan agar tidak menandai semua keluhan.
-        if WORRY.search(full_text):
-            score += 0.24
-        if re.search(r"\b(kapan|nanti|ke depan|masa depan|suatu hari|akan|mungkin|kemungkinan|entah|belum|masih ragu|tidak yakin|nggak yakin|gak yakin|apakah|akankah|bisakah|mungkinkah)\b", full_text):
-            score += 0.18
-        if re.search(r"\b(tidak bisa|tidak mampu|gagal|kalah|tidak berhasil|tidak tercapai|tidak mendapat|belum bisa|belum mampu)\b", full_text):
+    related_links = 0
+    for x, y, reason in links:
+        if name == "Social Comparison" and "diri ↔ pihak lain" in reason:
+            related_links += 1
+        elif name == "Perceived Lagging" and "diri ↔ pihak lain" in reason:
+            related_links += 1
+        elif name == "Future Uncertainty" and ("ketidakpastian" in reason or "emosi ↔ konteks" in reason):
+            related_links += 1
+        elif name == "Negative Self-Evaluation" and ("emosi ↔ konteks" in reason or "sebab-akibat" in reason):
+            related_links += 1
+        elif name == "Achievement Exposure" and "diri ↔ pihak lain" in reason:
+            related_links += 1
+    score += min(0.14, 0.035 * related_links)
+
+    # Penguatan berbasis kombinasi sinyal, bukan keyword tunggal.
+    if name == "Achievement Exposure":
+        if OTHER.search(full_text) and re.search(r"\b(sudah|telah|berhasil|sukses|menang|lulus|diterima|prestasi|jabatan|penghasilan|pencapaian)\b", full_text):
             score += 0.16
-        # Kombinasi khawatir/takut + outcome negatif adalah sinyal kuat.
-        if WORRY.search(full_text) and re.search(r"\b(tidak|nggak|gak|belum|gagal|kalah)\b", full_text):
-            score += 0.16
-    if name == "Social Comparison" and SELF.search(full_text) and OTHER.search(full_text):
-        if re.search(r"\b(dibanding|dibandingkan|lebih|seperti|lawan|teman)\b", full_text):
-            score += 0.20
-    if name == "Perceived Lagging" and SELF.search(full_text) and OTHER.search(full_text):
-        if re.search(r"\b(lebih|berpengalaman|sudah|belum|kapan|dibanding)\b", full_text):
+
+    if name == "Social Comparison":
+        if SELF.search(full_text) and OTHER.search(full_text):
+            if re.search(r"\b(dibanding|dibandingkan|lebih|kalah|seperti|daripada|berbeda)\b", full_text):
+                score += 0.22
+        if len(sentences) >= 2 and any(SELF.search(s) for s in sentences) and any(OTHER.search(s) for s in sentences):
+            score += 0.08
+
+    if name == "Perceived Lagging":
+        if SELF.search(full_text) and OTHER.search(full_text) and re.search(r"\b(lebih|sudah|belum|tertinggal|ketinggalan|kapan|terlambat)\b", full_text):
+            score += 0.22
+        if re.search(r"\b(seharusnya|umur|usia|telat|terlambat)\b", full_text) and re.search(r"\b(belum|masih)\b", full_text):
             score += 0.14
-    # Do not confuse a competition-specific fear ("tidak bisa menang")
-    # with global negative self-evaluation.
-    if name == "Negative Self-Evaluation":
-        if NEGATIVE_SELF.search(full_text):
-            score += 0.20
-        elif re.search(r"\b(tidak bisa menang|tidak mampu menang|takut kalah)\b", full_text):
-            score = min(score, 0.15)
 
-    return round(min(score, 1.0), 2), list(dict.fromkeys(evidence))
+    if name == "Future Uncertainty":
+        if WORRY.search(full_text):
+            score += 0.22
+        if UNCERTAINTY.search(full_text):
+            score += 0.18
+        if re.search(r"\b(tidak bisa|tidak mampu|gagal|kalah|tidak berhasil|tidak tercapai|belum bisa|belum mampu)\b", full_text):
+            score += 0.14
+        if WORRY.search(full_text) and re.search(r"\b(tidak|nggak|gak|belum|gagal|mungkin)\b", full_text):
+            score += 0.12
+
+    if name == "Negative Self-Evaluation":
+        if NEGATIVE_SELF.search(full_text) and SELF.search(full_text):
+            score += 0.24
+        if re.search(r"\b(merasa|menganggap|menilai|diri)\b", full_text) and NEGATIVE_SELF.search(full_text):
+            score += 0.12
+        if re.search(r"\b(tidak bisa menang|tidak mampu menang|takut kalah)\b", full_text) and not re.search(r"\b(saya|aku)\b.{0,50}\b(gagal|bodoh|payah|tidak mampu|tidak cukup)\b", full_text):
+            score = min(score, 0.22)
+
+    # Kurangi skor bila kalimat secara eksplisit menyangkal sinyal.
+    if evidence:
+        penalty = sum(negation_penalty(s) for _, s in evidence)
+        score -= min(0.25, penalty)
+
+    # Intensifier memperkuat sinyal yang memang sudah punya bukti.
+    if evidence and INTENSIFIER.search(full_text):
+        score += 0.05
+
+    return round(max(0.0, min(score, 1.0)), 2), list(dict.fromkeys(evidence))
 
 def analyze_text(text):
     full = normalize(text)
@@ -290,45 +348,4 @@ st.markdown('</div>', unsafe_allow_html=True)
 # ---------- Chart ----------
 st.markdown('<div class="card">', unsafe_allow_html=True)
 st.markdown("### 📊 Ringkasan Indikator")
-st.caption("Semakin tinggi skor, semakin kuat indikasi pola pada teks.")
-fig=go.Figure()
-fig.add_trace(go.Bar(x=labels,y=list(scores.values()),text=[f"{v:.2f}" for v in scores.values()],
-                     textposition="outside",marker_color=colors))
-fig.update_yaxes(range=[0,1.12],dtick=.2)
-fig.update_layout(height=370,margin=dict(l=20,r=20,t=30,b=90),paper_bgcolor="rgba(0,0,0,0)",
-                  plot_bgcolor="rgba(0,0,0,0)",font_color="#dbe6ff",showlegend=False)
-st.plotly_chart(fig,use_container_width=True,config={"displayModeBar":False})
-
-st.markdown("### ☷ Detail Indikator")
-cols=st.columns(2)
-for i,(k,v) in enumerate(scores.items()):
-    with cols[i%2]:
-        sev=severity(v)
-        st.markdown(f"""<div class="insight"><b>{k}</b>
-        <span style="float:right"><b>{sev}</b> · {v:.2f}</span>
-        <br><span class="small">{detail(k,v)}</span>
-        <br><span class="small">Bukti kalimat: {" | ".join([f"Kalimat {n}: {sent}" for n, sent in evidence.get(k, [])]) if evidence.get(k) else "Tidak ada bukti kalimat yang memenuhi pola."}</span></div>""",unsafe_allow_html=True)
-st.markdown('</div>', unsafe_allow_html=True)
-
-# ---------- Deep analysis ----------
-st.markdown('<div class="card">', unsafe_allow_html=True)
-st.markdown("### 🔍 Analisis Mendalam")
-peak_hits = evidence.get(peak, []) if peak not in ("Belum dianalisis", "Belum terdeteksi") else []
-peak_evidence_text = (
-    " | ".join([f"Kalimat {n}: {sent}" for n, sent in peak_hits])
-    if peak_hits else "Belum ada bukti kalimat spesifik."
-)
-patterns = [
-("🔵 Pola Utama", f"Indikator tertinggi: {peak} ({scores.get(peak,0):.2f}). Bukti kalimat: {peak_evidence_text}"),
-("🟠 Pembedaan Indikator", "Achievement Exposure hanya mengukur penyebutan/paparan terhadap pencapaian orang lain. Social Comparison baru naik jika teks menunjukkan tindakan atau penilaian membandingkan diri dengan orang lain."),
-("🟣 Konteks & Negasi", "Kata seperti 'tidak takut' atau 'tidak tertinggal' tidak seharusnya dihitung sama dengan pernyataan positif yang menunjukkan kekhawatiran. Prototype ini menggunakan pemeriksaan negasi sederhana."),
-("🟢 Batasan", "Skor berasal dari rule-based keyword/phrase matching. Untuk akurasi produksi, sistem sebaiknya dilatih dan diuji dengan dataset berlabel serta evaluasi precision, recall, F1, dan confusion matrix.")
-]
-for title, body in patterns:
-    st.markdown(f"<div class='insight'><b>{title}</b><br>{body}</div>",unsafe_allow_html=True)
-st.markdown('</div>', unsafe_allow_html=True)
-
-# ---------- Recommendations ----------
-st.markdown('<div class="tip">', unsafe_allow_html=True)
-st.markdown("### 🌱 Saran yang sesuai")
-st.write("Berdasarkan pola analisis")
+st.caption("Semakin tinggi skor, semakin kuat in
