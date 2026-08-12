@@ -361,4 +361,4 @@ with a:
     st.plotly_chart(fig,use_container_width=True,config={"displayModeBar":False})
 with b:
     st.markdown("### 📊 Hasil Analisis")
-    st.markdown(f"Pola yang terdeteksi: s
+    st.markdown(f"Pola yang terdeteksi: s)
