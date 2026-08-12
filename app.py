@@ -23,6 +23,13 @@ div[data-testid="stTextArea"] textarea { background:#0c1532 !important; color:#e
 div[data-testid="stMetric"] { background:#0d1735; border:1px solid #213665; padding:12px; border-radius:14px; }
 .insight { background:#0c1836; border:1px solid #223968; border-radius:15px; padding:14px 16px; margin:8px 0; }
 .tip { background:linear-gradient(90deg,#073b3d,#123c3d); border:1px solid #087f79; border-radius:18px; padding:18px; }
+@media (max-width: 700px) {
+  .block-container { padding-left: .75rem !important; padding-right: .75rem !important; padding-top: .8rem !important; }
+  .card { padding: 14px !important; border-radius: 16px !important; }
+  .insight { padding: 12px !important; margin: 7px 0 !important; }
+  .tip { padding: 14px !important; }
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -46,7 +53,7 @@ with st.sidebar:
     st.markdown("ℹ️ Tentang SAED")
     st.markdown("---")
     st.info("SAED adalah prototipe NLP untuk membaca pola bahasa terkait pencapaian sosial, perbandingan diri, kekhawatiran masa depan, dan evaluasi diri.")
-    st.caption("© 2026 SAED • Prototype v1.2")
+    st.caption("© 2026 SAED • Prototype v1.3")
 
 st.markdown(f"""
 <div class="hero">
@@ -356,9 +363,4 @@ with a:
     fig=go.Figure(go.Pie(values=[overall,100-overall], hole=.76, textinfo="none",
                          marker=dict(colors=["#20cfff","#1a2a58"])))
     fig.update_layout(height=230, margin=dict(l=0,r=0,t=0,b=0), showlegend=False,
-                      paper_bgcolor="rgba(0,0,0,0)", annotations=[dict(text=f"<b>{overall}%</b><br>{level}",
-                      x=.5,y=.5,font=dict(size=20,color="white"),showarrow=False)])
-    st.plotly_chart(fig,use_container_width=True,config={"displayModeBar":False})
-with b:
-    st.markdown("### 📊 Hasil Analisis")
-    st.markdown(f"Pola yang terdeteksi: <")
+                      paper_bgcolor="rg"
