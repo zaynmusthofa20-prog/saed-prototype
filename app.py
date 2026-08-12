@@ -46,7 +46,7 @@ with st.sidebar:
     st.markdown("ℹ️ Tentang SAED")
     st.markdown("---")
     st.info("SAED adalah prototipe NLP untuk membaca pola bahasa terkait pencapaian sosial, perbandingan diri, kekhawatiran masa depan, dan evaluasi diri.")
-    st.caption("© 2026 SAED • Prototype v1.4")
+    st.caption("© 2026 SAED • Prototype v1.5")
 
 st.markdown(f"""
 <div class="hero">
@@ -349,16 +349,20 @@ def severity(v):
 def detail(k, v):
     return INDICATORS[k]["label"]
 
-# ---------- Result ----------
-st.markdown('<div class="card">', unsafe_allow_html=True)
-a,b=st.columns([1,2])
-with a:
-    fig=go.Figure(go.Pie(values=[overall,100-overall], hole=.76, textinfo="none",
-                         marker=dict(colors=["#20cfff","#1a2a58"])))
-    fig.update_layout(height=230, margin=dict(l=0,r=0,t=0,b=0), showlegend=False,
-                      paper_bgcolor="rgba(0,0,0,0)", annotations=[dict(text=f"<b>{overall}%</b><br>{level}",
-                      x=.5,y=.5,font=dict(size=20,color="white"),showarrow=False)])
-    st.plotly_chart(fig,use_container_width=True,config={"displayModeBar":False})
-with b:
-    st.markdown("### 📊 Hasil Analisis")
-    st.markdown(f"Pola yang terdeteksi: s)
+# ---------- Result Summary ----------
+st.markdown("## 📊 Hasil Analisis")
+if peak == "Belum dianalisis":
+    st.info("Masukkan teks lalu tekan **ANALISIS TEKS** untuk melihat hasil.")
+else:
+    st.markdown(f"**Pola dominan:** `{peak}`")
+    st.markdown(f"**Tingkat keseluruhan:** **{level}** ({overall}%)")
+
+st.markdown("## 📌 Ringkasan 5 Indikator")
+st.caption("Hasil setiap indikator ditentukan dari pola kalimat, konteks, negasi, intensifier, dan hubungan antar-kalimat.")
+
+for k, v in scores.items():
+    sev = severity(v)
+    icon = "🔴" if sev == "Tinggi" else ("🟠" if sev == "Sedang" else "🟢")
+    ev = evidence.get(k, [])
+    st.markdown(f"### {icon} {k} — {sev} ({int(v*100)}%)")
+    st.caption(INDICATORS)
