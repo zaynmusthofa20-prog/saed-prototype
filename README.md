@@ -1,11 +1,22 @@
-# SAED Prototype v8 — Future Uncertainty Sensitive
+# SAED Prototype v10 — Sensitive All Indicators
 
-Peningkatan utama:
-- Future Uncertainty lebih peka terhadap kekhawatiran dan ketidakpastian masa depan.
-- Mengenali pertanyaan waktu: "kapan", "kapan ya", "kapan kira-kira".
-- Mengenali kemungkinan: "mungkin", "kemungkinan", "entah", "apakah", "bisakah", "mungkinkah".
-- Mengenali pola "takut/khawatir + tidak bisa/gagal/kalah".
-- Mengenali "belum tahu", "tidak yakin", "masih ragu".
-- Tetap mempertimbangkan konteks kalimat/paragraf.
+Versi ini mempertahankan fitur yang sudah ada pada SAED Prototype v8 dan hanya memperkuat sensitivitas deteksinya.
 
-Prototype rule-based; bukan diagnosis psikologis.
+## Indikator yang diperkuat
+1. Achievement Exposure
+2. Social Comparison
+3. Perceived Lagging
+4. Future Uncertainty
+5. Negative Self-Evaluation
+
+## Perubahan inti
+- Pola kalimat diperluas dengan variasi bahasa Indonesia yang umum.
+- Ditambahkan vocabulary/lexicon per indikator.
+- Ditambahkan contextual scoring per kalimat.
+- Ditambahkan cross-sentence reinforcement tanpa menghapus mekanisme evidence lama.
+- Sistem tetap memakai evidence kalimat, context links, skor keseluruhan, chart, riwayat/session state, rekomendasi, dan tampilan yang sudah ada.
+- Ditambahkan label **Sangat Tinggi** pada detail indikator.
+- Ditambahkan safeguard sederhana untuk negasi dan false positive yang jelas.
+
+## Catatan
+SAED tetap merupakan prototipe analisis pola bahasa, bukan alat diagnosis. Untuk validasi produksi, gunakan dataset berlabel dan ukur precision, recall, F1, serta confusion matrix.
