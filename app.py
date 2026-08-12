@@ -1,4 +1,3 @@
-
 import re
 import streamlit as st
 import plotly.graph_objects as go
@@ -243,7 +242,7 @@ st.markdown('</div>', unsafe_allow_html=True)
 # ---------- Deep analysis ----------
 st.markdown('<div class="card">', unsafe_allow_html=True)
 st.markdown("### 🔍 Analisis Mendalam")
-peak_hits = hits.get(peak, []) if peak != "Belum dianalisis" else []
+peak_hits = evidence.get(peak, []) if peak != "Belum dianalisis" else []
 patterns = [
 ("🔵 Pola Utama", f"Indikator tertinggi: {peak} ({scores.get(peak,0):.2f}). Bukti bahasa: {', '.join(peak_hits) if peak_hits else 'belum ada bukti frasa spesifik'}."),
 ("🟠 Pembedaan Indikator", "Achievement Exposure hanya mengukur penyebutan/paparan terhadap pencapaian orang lain. Social Comparison baru naik jika teks menunjukkan tindakan atau penilaian membandingkan diri dengan orang lain."),
