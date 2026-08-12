@@ -284,6 +284,38 @@ fig.update_layout(height=370,margin=dict(l=20,r=20,t=30,b=90),paper_bgcolor="rgb
                   plot_bgcolor="rgba(0,0,0,0)",font_color="#dbe6ff",showlegend=False)
 st.plotly_chart(fig,use_container_width=True,config={"displayModeBar":False})
 
+
+st.markdown("### 🎯 Persentase Indikator")
+gcols = st.columns(len(scores))
+for gcol, (glabel, gvalue) in zip(gcols, scores.items()):
+    with gcol:
+        gpct = int(round(gvalue * 100))
+        gauge_fig = go.Figure(go.Pie(
+            values=[gpct, 100-gpct],
+            hole=0.78,
+            textinfo="none",
+            marker=dict(colors=["#20cfff", "#182a58"]),
+            sort=False,
+            direction="clockwise",
+            rotation=270
+        ))
+        gauge_fig.update_layout(
+            height=180,
+            margin=dict(l=5,r=5,t=5,b=5),
+            showlegend=False,
+            paper_bgcolor="rgba(0,0,0,0)",
+            annotations=[dict(
+                text=f"<b>{gpct}%</b><br><span style='font-size:10px'>{glabel}</span>",
+                x=0.5, y=0.5, showarrow=False,
+                font=dict(size=19, color="white")
+            )]
+        )
+        st.plotly_chart(
+            gauge_fig,
+            use_container_width=True,
+            config={"displayModeBar": False}
+        )
+
 st.markdown("### ☷ Detail Indikator")
 cols=st.columns(2)
 for i,(k,v) in enumerate(scores.items()):
@@ -334,23 +366,46 @@ if scores["Future Uncertainty"] >= .35:
     recs += ["Pisahkan hal yang bisa dikendalikan hari ini dari hal yang belum bisa dipastikan.",
              "Pilih satu tindakan kecil untuk 24 jam ke depan daripada mencoba memecahkan seluruh masa depan sekaligus."]
 if not recs:
-    recs = ["Belum ada indikator yang cukup kuat. Gunakan hasil ini sebagai refleksi, bukan label diri.",
-            "Jika ingin analisis lebih akurat, masukkan satu paragraf utuh agar hubungan antar-kalimat dapat dibaca."]
+    recs = [
+        "Belum ada indikator yang cukup kuat. Gunakan hasil ini sebagai refleksi, bukan label diri.",
+        "Jika ingin analisis lebih akurat, masukkan satu paragraf utuh agar hubungan antar-kalimat dapat dibaca."
+    ]
 
 for r in recs:
     st.markdown(f"✅ {r}")
-st.markdown("<div style='margin-top:12px;padding:12px;border-radius:12px;background:#3b3a1d'>💡 <i>“Progres yang lambat tetaplah progres. Fokus pada perjalananmu sendiri.”</i></div>",unsafe_allow_html=True)
+
+st.markdown(
+    """
+    <div style='margin-top:12px;padding:12px;border-radius:12px;background:#3b3a1d'>
+        💡 <i>“Progres yang lambat tetaplah progres. Fokus pada perjalananmu sendiri.”</i>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
 st.markdown('</div>', unsafe_allow_html=True)
 
 with st.expander("🔎 Lihat proses analisis kalimat & paragraf"):
     if sentences:
         st.markdown("**Segmentasi kalimat:**")
+
         for i, sent in enumerate(sentences, 1):
             st.markdown(f"- **Kalimat {i}:** {sent}")
+
         st.markdown(f"**Hubungan konteks terdeteksi:** {len(links)}")
+
         for x, y, pair in links:
-            st.caption(f"Kalimat {x} ↔ {y}: konteks berpotensi saling terkait.")
+            st.caption(
+                f"Kalimat {x} ↔ {y}: konteks berpotensi saling terkait."
+            )
     else:
         st.caption("Belum ada teks yang dianalisis.")
 
-st.markdown("<div style='text-align:center;color:#66759a;padding:25px'>SAED • Social Achievement Exposure Detector • Prototype NLP</div>",unsafe_a)
+st.markdown(
+    """
+    <div style='text-align:center;color:#66759a;padding:25px'>
+        SAED • Social Achievement Exposure Detector • Prototype NLP
+    </div>
+    """,
+    unsafe_allow_html=True
+)
