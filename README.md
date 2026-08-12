@@ -13,3 +13,4 @@ Fitur:
 - rekomendasi kondisional berdasarkan indikator
 
 Catatan: tetap merupakan prototype rule-based, bukan diagnosis psikologis. Untuk produksi disarankan menambahkan model NLP/transformer dan dataset berlabel.
+
