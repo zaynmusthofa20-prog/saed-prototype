@@ -353,4 +353,4 @@ with st.expander("🔎 Lihat proses analisis kalimat & paragraf"):
     else:
         st.caption("Belum ada teks yang dianalisis.")
 
-st.markdown("<div style='text-align:center;color:#66759a;padding:25px'>SAED • Social Achievement Exposure Detector • Prototype NLP</div>",unsafe_a
+st.markdown("<div style='text-align:center;color:#66759a;padding:25px'>SAED • Social Achievement Exposure Detector • Prototype NLP</div>",unsafe_a)
