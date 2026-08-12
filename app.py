@@ -1,326 +1,205 @@
+
 import re
-import pandas as pd
 import streamlit as st
 import plotly.graph_objects as go
 
-st.set_page_config(
-    page_title="SAED - Social Achievement Exposure Detector",
-    page_icon="🧠",
-    layout="centered"
-)
+st.set_page_config(page_title="SAED — Social Achievement Exposure Detector",
+                   page_icon="🧠", layout="wide", initial_sidebar_state="expanded")
 
+# ---------- Theme ----------
 st.markdown("""
 <style>
-    .stApp {
-        background: radial-gradient(circle at top left, #171c4a 0%, #0b1020 38%, #080b14 100%);
-        color: #f5f7ff;
-    }
-    .block-container { max-width: 900px; padding-top: 1.2rem; padding-bottom: 3rem; }
-    .top-header {
-        padding: 1.1rem 1.3rem; border-radius: 22px;
-        background: linear-gradient(135deg, #182b72, #22215c 55%, #301d68);
-        border: 1px solid rgba(110, 130, 255, .35);
-        box-shadow: 0 12px 35px rgba(30, 45, 130, .25); margin-bottom: 1rem;
-    }
-    .logo-title { font-size: 2rem; font-weight: 800; margin: 0; }
-    .subtitle { color: #b8c4e8; font-size: .95rem; margin-top: .15rem; }
-    .section-title { font-size: 1.35rem; font-weight: 800; margin-top: 1.25rem; margin-bottom: .7rem; }
-    .result-card {
-        padding: 1.2rem; border-radius: 22px;
-        background: linear-gradient(135deg, rgba(31, 44, 101, .92), rgba(25, 22, 67, .94));
-        border: 1px solid rgba(100, 130, 255, .28);
-        box-shadow: 0 12px 30px rgba(0,0,0,.25); margin-top: 1rem;
-    }
-    .result-title { font-size: 1.3rem; font-weight: 800; }
-    .pattern-badge {
-        display: inline-block; padding: .35rem .75rem; border-radius: 999px;
-        background: linear-gradient(90deg, #315cf5, #7048ff);
-        color: white; font-weight: 700; margin: .35rem 0;
-    }
-    .level-box { text-align: center; padding: 1rem; border-radius: 18px; background: rgba(7, 10, 28, .48); }
-    .level-number { font-size: 2rem; font-weight: 900; }
-    .level-label { font-size: 1rem; font-weight: 700; color: #dbe4ff; }
-    .indicator-card {
-        padding: 1rem; border-radius: 17px; background: rgba(24, 30, 59, .85);
-        border: 1px solid rgba(130, 145, 210, .18); margin-bottom: .7rem;
-    }
-    .indicator-name { font-weight: 800; font-size: 1rem; }
-    .indicator-desc { color: #b7bed4; font-size: .87rem; line-height: 1.45; margin-top: .3rem; }
-    .badge-low { background: #18a866; color: white; padding: .25rem .65rem; border-radius: 999px; font-weight: 800; font-size: .78rem; }
-    .badge-medium { background: #e6a52e; color: #17120a; padding: .25rem .65rem; border-radius: 999px; font-weight: 800; font-size: .78rem; }
-    .badge-high { background: #f04f5f; color: white; padding: .25rem .65rem; border-radius: 999px; font-weight: 800; font-size: .78rem; }
-    .advice-box {
-        padding: 1.15rem; border-radius: 22px;
-        background: linear-gradient(135deg, rgba(9, 103, 98, .78), rgba(15, 68, 80, .82));
-        border: 1px solid rgba(61, 225, 193, .25); margin-top: 1rem;
-    }
-    .advice-item { padding: .65rem .7rem; margin: .35rem 0; border-radius: 13px; background: rgba(4, 20, 28, .32); color: #e8ffff; }
-    .quote-box {
-        margin-top: .8rem; padding: .85rem 1rem; border-radius: 14px;
-        background: rgba(238, 190, 61, .18); border: 1px solid rgba(238, 190, 61, .35);
-        color: #fff0b0; font-style: italic;
-    }
-    .footer { color: #858ca5; font-size: .8rem; text-align: center; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid rgba(150,160,190,.15); }
-    div.stButton > button { border-radius: 14px; font-weight: 800; min-height: 2.8rem; }
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+html, body, [class*="css"] { font-family: Inter, sans-serif; }
+.stApp { background: radial-gradient(circle at 80% 0%, #101d4d 0%, #050a1d 42%, #020513 100%); color:#eef3ff; }
+section[data-testid="stSidebar"] { background: linear-gradient(180deg,#07102d,#030817); border-right:1px solid #182957; }
+.block-container { max-width: 1250px; padding-top: 1.4rem; }
+.card { background: linear-gradient(145deg,rgba(17,29,66,.92),rgba(8,15,37,.94)); border:1px solid #203467; border-radius:20px; padding:22px; margin-bottom:16px; box-shadow:0 10px 35px rgba(0,0,0,.22); }
+.hero { border-radius:20px; padding:18px 22px; background:linear-gradient(100deg,#101c46,#111a3d); border:1px solid #253b75; }
+.badge { display:inline-block; padding:7px 14px; border-radius:18px; background:#123d78; color:#52cfff; font-weight:700; }
+.small { color:#9ba9c9; font-size:.88rem; }
+h1,h2,h3 { color:#f7f9ff !important; }
+div[data-testid="stTextArea"] textarea { background:#0c1532 !important; color:#edf2ff !important; border:1px solid #2c4173 !important; border-radius:15px !important; }
+.stButton > button { border-radius:12px; font-weight:700; min-height:46px; }
+div[data-testid="stMetric"] { background:#0d1735; border:1px solid #213665; padding:12px; border-radius:14px; }
+.insight { background:#0c1836; border:1px solid #223968; border-radius:15px; padding:14px 16px; margin:8px 0; }
+.tip { background:linear-gradient(90deg,#073b3d,#123c3d); border:1px solid #087f79; border-radius:18px; padding:18px; }
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown("""
-<div class="top-header">
-    <div class="logo-title">🧠 SAED</div>
-    <div class="subtitle">Social Achievement Exposure Detector · Prototype NLP</div>
+# ---------- Brain logo ----------
+brain_svg = """<svg width="74" height="74" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+<defs><linearGradient id="g" x1="0" x2="1"><stop stop-color="#20d9ff"/><stop offset="1" stop-color="#693cff"/></linearGradient></defs>
+<path d="M46 20c-12-10-27-1-25 12-12 4-12 22-2 27-4 13 9 24 20 17 4 12 18 11 21 2V22c-4-4-9-4-14-2z" fill="none" stroke="url(#g)" stroke-width="7" stroke-linecap="round"/>
+<path d="M54 20c12-10 27-1 25 12 12 4 12 22 2 27 4 13-9 24-20 17-4 12-18 11-21 2V22c4-4 9-4 14-2z" fill="none" stroke="url(#g)" stroke-width="7" stroke-linecap="round"/>
+<path d="M50 17v66M31 35c7 2 10 7 8 13M69 35c-7 2-10 7-8 13M31 57c6-1 10 2 10 8M69 57c-6-1-10 2-10 8" fill="none" stroke="#39cfff" stroke-width="4" stroke-linecap="round"/>
+</svg>"""
+
+with st.sidebar:
+    st.markdown(brain_svg, unsafe_allow_html=True)
+    st.markdown("## SAED")
+    st.caption("Social Achievement Exposure Detector")
+    st.markdown("---")
+    st.markdown("### 🏠 Dashboard")
+    st.markdown("📊 Analisis")
+    st.markdown("🕘 Riwayat Analisis")
+    st.markdown("💡 Rekomendasi")
+    st.markdown("ℹ️ Tentang SAED")
+    st.markdown("---")
+    st.info("SAED adalah prototipe NLP untuk membaca pola bahasa terkait pencapaian sosial, perbandingan diri, kekhawatiran masa depan, dan evaluasi diri.")
+    st.caption("© 2026 SAED • Prototype v1.0")
+
+st.markdown(f"""
+<div class="hero">
+<div style="display:flex;align-items:center;gap:14px">{brain_svg}
+<div><h1 style="margin:0">SAED</h1><div class="small">Social Achievement Exposure Detector</div></div>
+<div style="margin-left:auto" class="badge">✦ Prototype NLP</div></div>
 </div>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="section-title">📝 Masukkan teks yang ingin dianalisis</div>', unsafe_allow_html=True)
+st.markdown("")
 
-text = st.text_area(
-    "",
-    placeholder="Tulis teks di sini... (misalnya keluhan, curhatan, atau opini)",
-    height=150,
-    max_chars=1000,
-    label_visibility="collapsed"
-)
-
+# ---------- Input ----------
+st.markdown('<div class="card">', unsafe_allow_html=True)
+st.markdown("### 📝 Masukkan teks yang ingin dianalisis")
+text = st.text_area("", placeholder="Tulis teks di sini... (misalnya keluhan, curhatan, atau opini)",
+                    height=130, max_chars=1000, label_visibility="collapsed")
+c1, c2 = st.columns([4,1])
+analyze = c1.button("🔎  ANALISIS TEKS  ›", use_container_width=True, type="primary")
+reset = c2.button("↻  Reset", use_container_width=True)
 st.caption(f"{len(text)}/1000")
-
-col1, col2 = st.columns([3, 1])
-with col1:
-    analyze = st.button("🔎  ANALISIS TEKS  →", use_container_width=True, type="primary")
-with col2:
-    reset = st.button("↻  Reset", use_container_width=True)
+st.markdown('</div>', unsafe_allow_html=True)
 
 if reset:
     st.rerun()
 
-INDICATORS = {
-    "Achievement Exposure": {
-        "keywords": ["sukses", "berhasil", "prestasi", "pencapaian", "juara", "gaji", "kerja bagus", "naik jabatan", "wisuda", "lulus", "promosi", "achievement", "pencapaian orang", "orang lain berhasil"],
-        "description": "Paparan terhadap pencapaian atau keberhasilan pihak lain.",
-        "color": "#2997ff"
-    },
-    "Future Uncertainty": {
-        "keywords": ["masa depan", "takut gagal", "khawatir", "cemas", "tidak tahu", "bingung", "nanti", "besok", "masa depanku", "tidak punya arah", "takut tidak berhasil"],
-        "description": "Kekhawatiran atau ketidakpastian mengenai masa depan.",
-        "color": "#ffae35"
-    },
-    "Negative Self-Evaluation": {
-        "keywords": ["aku tidak bisa", "aku gagal", "aku buruk", "aku bodoh", "aku kurang", "tidak cukup", "tidak berguna", "tidak mampu", "rendah diri", "jelek", "tidak sehebat", "merasa gagal"],
-        "description": "Munculnya penilaian diri yang cenderung negatif.",
-        "color": "#24c5c7"
-    },
-    "Perceived Lagging": {
-        "keywords": ["tertinggal", "ketinggalan", "telat", "teman sudah", "orang lain sudah", "sementara aku", "aku belum", "belum mencapai", "jauh di belakang", "semua sudah"],
-        "description": "Perasaan bahwa perkembangan diri tertinggal dari orang lain.",
-        "color": "#7a4cff"
-    },
-    "Social Comparison": {
-        "keywords": ["membandingkan", "dibandingkan", "bandingkan", "lebih sukses", "lebih kaya", "lebih pintar", "lebih baik", "kalah dari", "saingan", "teman-teman", "orang lain lebih"],
-        "description": "Kecenderungan membandingkan diri dengan orang lain.",
-        "color": "#ec3d87"
+# ---------- NLP prototype ----------
+def analyze_text(t):
+    s=t.lower()
+    groups = {
+        "Achievement Exposure": ["sukses","berhasil","prestasi","gaji","jabatan","lulus","menang","pencapaian","orang lain","teman","linkedin","instagram"],
+        "Future Uncertainty": ["takut","khawatir","masa depan","besok","nanti","gagal","cemas","tidak yakin","bingung"],
+        "Negative Self-Evaluation": ["aku tidak","saya tidak","kurang","jelek","bodoh","gagal","tidak mampu","rendah diri","tidak cukup","ketinggalan"],
+        "Perceived Lagging": ["tertinggal","ketinggalan","belum punya","sementara mereka","sedangkan dia","telat","lambat"],
+        "Social Comparison": ["dibanding","bandingkan","mereka lebih","dia lebih","teman-teman","orang lain","seumuran","lebih sukses"]
     }
-}
-
-def clean_text(text):
-    text = text.lower()
-    text = re.sub(r"\s+", " ", text)
-    return text.strip()
-
-def calculate_scores(text):
-    text = clean_text(text)
-    scores = {}
-    for name, data in INDICATORS.items():
-        hits = sum(1 for keyword in data["keywords"] if keyword in text)
-        scores[name] = round(min(hits / 4, 1.0), 2)
-    return scores
-
-def predicate(score):
-    if score >= 0.70:
-        return "Parah"
-    elif score >= 0.40:
-        return "Sedang"
-    return "Rendah"
-
-def predicate_class(level):
-    if level == "Parah":
-        return "badge-high"
-    elif level == "Sedang":
-        return "badge-medium"
-    return "badge-low"
-
-def overall_level(scores):
-    highest = max(scores.values())
-    if highest >= 0.70:
-        return "Parah"
-    elif highest >= 0.40:
-        return "Sedang"
-    return "Rendah"
-
-def detect_pattern(scores):
-    strongest = max(scores, key=scores.get)
-    if scores[strongest] == 0:
-        return "Belum ada pola dominan"
-    return strongest
-
-ADVICE = {
-    "Achievement Exposure": [
-        "Fokus pada target dan perkembangan pribadimu. Bandingkan dirimu dengan versi dirimu yang kemarin, bukan dengan pencapaian orang lain.",
-        "Gunakan media sosial sebagai sumber inspirasi dan informasi, bukan sebagai tolok ukur nilai dirimu.",
-        "Kurangi paparan konten pencapaian ketika mulai membuatmu merasa kurang atau tertinggal.",
-        "Catat pencapaian kecil yang sudah kamu raih agar perkembanganmu sendiri tetap terlihat.",
-        "Ingat bahwa setiap orang memiliki waktu, kondisi, dan jalur keberhasilan yang berbeda."
-    ],
-    "Future Uncertainty": [
-        "Pecah kekhawatiran tentang masa depan menjadi target kecil yang bisa dikerjakan hari ini.",
-        "Fokus pada hal yang masih bisa kamu kendalikan daripada mencoba memastikan semua hal yang belum terjadi.",
-        "Buat rencana sederhana untuk satu minggu ke depan agar masa depan terasa lebih terarah.",
-        "Tidak semua ketidakpastian harus segera memiliki jawaban. Beri ruang untuk proses.",
-        "Evaluasi kemajuan secara berkala, bukan menuntut diri untuk langsung mengetahui seluruh arah hidup."
-    ],
-    "Negative Self-Evaluation": [
-        "Hindari memberi label negatif pada dirimu hanya karena satu kegagalan atau kekurangan.",
-        "Ganti kalimat 'aku tidak bisa' menjadi 'aku belum bisa dan masih bisa belajar'.",
-        "Catat kemampuan dan hal-hal yang sudah berhasil kamu lakukan sebagai pengingat bahwa kemampuanmu terus berkembang.",
-        "Berikan dirimu kesempatan untuk melakukan kesalahan tanpa menjadikannya ukuran nilai diri.",
-        "Fokus pada proses belajar dan perbaikan, bukan hanya hasil akhir."
-    ],
-    "Perceived Lagging": [
-        "Kecepatan perkembangan setiap orang berbeda. Tidak terlambat bukan berarti harus mengikuti jadwal orang lain.",
-        "Tentukan ukuran keberhasilan yang sesuai dengan kondisi dan tujuanmu sendiri.",
-        "Kurangi kebiasaan melihat pencapaian orang lain ketika hal tersebut membuatmu merasa tertinggal.",
-        "Pilih satu kemajuan kecil yang bisa kamu lakukan minggu ini dan jadikan itu prioritas.",
-        "Perjalanan yang lebih lambat tetap merupakan perjalanan selama kamu terus bergerak."
-    ],
-    "Social Comparison": [
-        "Gunakan pencapaian orang lain sebagai referensi atau inspirasi, bukan sebagai ukuran harga dirimu.",
-        "Batasi kebiasaan membandingkan kehidupan nyata dengan potongan kehidupan orang lain di media sosial.",
-        "Ketika muncul perbandingan, tanyakan: 'Apa yang sebenarnya ingin aku capai untuk diriku sendiri?'",
-        "Alihkan perhatian dari siapa yang lebih unggul menjadi apa yang bisa kamu tingkatkan.",
-        "Bangun standar keberhasilan berdasarkan nilai dan tujuan pribadi."
-    ]
-}
-
-def get_advice(scores):
-    strongest = max(scores, key=scores.get)
-    advice = ADVICE[strongest].copy()
-    if scores[strongest] >= 0.70:
-        advice.append("Pertimbangkan untuk mengambil jeda dari konten yang memicu tekanan dan mengembalikan fokus pada aktivitas yang membuatmu merasa lebih stabil.")
-    return advice[:6]
+    weights = {"Achievement Exposure":1.0,"Future Uncertainty":.82,"Negative Self-Evaluation":.78,"Perceived Lagging":.68,"Social Comparison":.72}
+    scores={}
+    hits={}
+    for k, words in groups.items():
+        found=[w for w in words if w in s]
+        hits[k]=found
+        base=min(1.0, len(found)*0.18 + (0.25 if found else 0))
+        # richer heuristic for longer texts
+        scores[k]=round(min(1.0, base + (0.08 if len(s)>180 and found else 0)),2)
+    if not any(hits.values()):
+        scores={"Achievement Exposure":.32,"Future Uncertainty":.24,"Negative Self-Evaluation":.20,"Perceived Lagging":.16,"Social Comparison":.14}
+    overall=round(sum(scores.values())/len(scores)*100)
+    peak=max(scores,key=scores.get)
+    level="Rendah" if overall<35 else "Sedang" if overall<65 else "Tinggi"
+    return scores,hits,overall,level,peak
 
 if analyze:
-    if not text.strip():
-        st.warning("⚠️ Silakan masukkan teks terlebih dahulu.")
-        st.stop()
+    scores,hits,overall,level,peak=analyze_text(text)
+else:
+    scores={"Achievement Exposure":1.0,"Future Uncertainty":.58,"Negative Self-Evaluation":.42,"Perceived Lagging":.28,"Social Comparison":.21}
+    hits={k:[] for k in scores}
+    overall=56; level="Sedang"; peak="Achievement Exposure"
 
-    scores = calculate_scores(text)
-    levels = {name: predicate(score) for name, score in scores.items()}
-    overall = overall_level(scores)
-    pattern = detect_pattern(scores)
-    strongest_score = max(scores.values())
-
-    st.markdown('<div class="section-title">📊 Hasil Analisis</div>', unsafe_allow_html=True)
-
-    col1, col2 = st.columns([1, 1.7])
-    with col1:
-        percent = int(strongest_score * 100)
-        st.markdown(f"""
-        <div class="level-box">
-            <div style="font-size:.9rem;color:#aeb8d5;">Tingkat keseluruhan</div>
-            <div class="level-number">{overall}</div>
-            <div class="level-label">({percent}%)</div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with col2:
-        st.markdown(f"""
-        <div class="result-card" style="margin-top:0;">
-            <div class="result-title">📈 Pola yang terdeteksi</div>
-            <div class="pattern-badge">{pattern}</div>
-            <p style="color:#c7cee3;line-height:1.5;">
-                Hasil menunjukkan indikator yang paling menonjol adalah <b>{pattern}</b>.
-                Nilai indikator lain tetap ditampilkan agar hasil dapat dilihat secara lebih menyeluruh.
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-
-    st.markdown('<div class="section-title">📊 Ringkasan Indikator</div>', unsafe_allow_html=True)
-
-    names = list(scores.keys())
-    values = [scores[n] for n in names]
-    colors = [INDICATORS[n]["color"] for n in names]
-
-    fig = go.Figure()
-    fig.add_trace(go.Bar(
-        x=names, y=values,
-        marker=dict(color=colors, line=dict(width=0)),
-        text=[f"{v:.2f}" for v in values],
-        textposition="outside",
-        textfont=dict(color="#ffffff", size=13),
-        hovertemplate="<b>%{x}</b><br>Skor: %{y:.2f}<extra></extra>"
-    ))
-    fig.update_layout(
-        height=430,
-        margin=dict(l=20, r=20, t=30, b=100),
-        plot_bgcolor="rgba(0,0,0,0)",
-        paper_bgcolor="rgba(0,0,0,0)",
-        font=dict(color="#e9edff", size=12),
-        yaxis=dict(range=[0, 1.12], tickformat=".1f", gridcolor="rgba(160,170,210,.14)", zerolinecolor="rgba(160,170,210,.20)", title="Skor"),
-        xaxis=dict(tickangle=-25, gridcolor="rgba(0,0,0,0)"),
-        showlegend=False
-    )
-    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
-    st.caption("Semakin tinggi skor, semakin kuat indikasi pola yang terdeteksi.")
-
-    st.markdown('<div class="section-title">☷ Detail Indikator</div>', unsafe_allow_html=True)
-
-    for name, score in scores.items():
-        level = levels[name]
-        badge = predicate_class(level)
-        percent = int(score * 100)
-        st.markdown(f"""
-        <div class="indicator-card">
-            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
-                <div class="indicator-name">{name}</div>
-                <span class="{badge}">{level}</span>
-            </div>
-            <div class="indicator-desc">
-                {INDICATORS[name]["description"]}<br>
-                <b style="color:#dfe5ff;">Skor: {percent}%</b>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    st.markdown('<div class="section-title">🌱 Saran yang sesuai</div>', unsafe_allow_html=True)
-
-    advice_list = get_advice(scores)
-    st.markdown("""
-    <div class="advice-box">
-        <div style="font-size:1.35rem;font-weight:800;">🌱 Rekomendasi personal</div>
-        <div style="color:#bdebe4;margin:.25rem 0 .7rem;">Berdasarkan indikator yang paling menonjol:</div>
-    """, unsafe_allow_html=True)
-
-    for advice in advice_list:
-        st.markdown(f'<div class="advice-item">✓ &nbsp; {advice}</div>', unsafe_allow_html=True)
-
-    quotes = {
-        "Achievement Exposure": "Keberhasilan orang lain bukan bukti bahwa kamu gagal.",
-        "Future Uncertainty": "Kamu tidak harus mengetahui seluruh jalan untuk mulai melangkah.",
-        "Negative Self-Evaluation": "Satu kesalahan tidak menentukan seluruh kemampuanmu.",
-        "Perceived Lagging": "Setiap orang memiliki garis waktu yang berbeda.",
-        "Social Comparison": "Fokus pada perjalananmu sendiri, bukan perlombaan dengan orang lain.",
-        "Belum ada pola dominan": "Tidak semua teks harus memiliki pola tertentu. Coba lihat kembali konteks dan makna keseluruhan teks."
+labels=list(scores.keys())
+colors=["#20a9ff","#ffae32","#22c4ca","#7446f5","#f23883"]
+def severity(v):
+    return "Rendah" if v<.35 else "Sedang" if v<.65 else "Parah"
+def detail(k,v):
+    d={
+    "Achievement Exposure":"Paparan terhadap pencapaian orang lain dan standar sosial yang terlihat dalam teks.",
+    "Future Uncertainty":"Terdapat sinyal kekhawatiran, ketidakpastian, atau tekanan terhadap masa depan.",
+    "Negative Self-Evaluation":"Muncul penilaian diri yang kurang positif atau keraguan terhadap kemampuan pribadi.",
+    "Perceived Lagging":"Ada kesan tertinggal dari target, teman sebaya, atau ritme perkembangan yang diharapkan.",
+    "Social Comparison":"Ada kecenderungan membandingkan kondisi diri dengan pencapaian orang lain."
     }
+    return d[k]
 
-    st.markdown(f'<div class="quote-box">💡 “{quotes[pattern]}”</div>', unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
+# ---------- Result ----------
+st.markdown('<div class="card">', unsafe_allow_html=True)
+a,b=st.columns([1,2])
+with a:
+    fig=go.Figure(go.Pie(values=[overall,100-overall], hole=.76, textinfo="none",
+                         marker=dict(colors=["#20cfff","#1a2a58"])))
+    fig.update_layout(height=230, margin=dict(l=0,r=0,t=0,b=0), showlegend=False,
+                      paper_bgcolor="rgba(0,0,0,0)", annotations=[dict(text=f"<b>{overall}%</b><br>{level}",
+                      x=.5,y=.5,font=dict(size=20,color="white"),showarrow=False)])
+    st.plotly_chart(fig,use_container_width=True,config={"displayModeBar":False})
+with b:
+    st.markdown("### 📊 Hasil Analisis")
+    st.markdown(f"Pola yang terdeteksi: <span class='badge'>{peak}</span>",unsafe_allow_html=True)
+    if peak=="Achievement Exposure":
+        desc="Teks menunjukkan adanya paparan terhadap pencapaian pihak lain. Pola ini dapat berkaitan dengan fokus pada standar sosial, namun belum otomatis berarti perbandingan diri yang kuat."
+    else:
+        desc=f"Teks paling kuat menunjukkan pola **{peak}**. Indikasinya perlu dilihat bersama konteks kalimat, intensitas emosi, dan indikator lainnya."
+    st.write(desc)
+    st.caption("Catatan: SAED adalah prototipe analisis bahasa, bukan alat diagnosis psikologis.")
+st.markdown('</div>', unsafe_allow_html=True)
 
-    with st.expander("🔎 Lihat teks setelah preprocessing"):
-        st.code(clean_text(text))
+# ---------- Chart ----------
+st.markdown('<div class="card">', unsafe_allow_html=True)
+st.markdown("### 📊 Ringkasan Indikator")
+st.caption("Semakin tinggi skor, semakin kuat indikasi pola pada teks.")
+fig=go.Figure()
+fig.add_trace(go.Bar(x=labels,y=list(scores.values()),text=[f"{v:.2f}" for v in scores.values()],
+                     textposition="outside",marker_color=colors))
+fig.update_yaxes(range=[0,1.12],dtick=.2)
+fig.update_layout(height=370,margin=dict(l=20,r=20,t=30,b=90),paper_bgcolor="rgba(0,0,0,0)",
+                  plot_bgcolor="rgba(0,0,0,0)",font_color="#dbe6ff",showlegend=False)
+st.plotly_chart(fig,use_container_width=True,config={"displayModeBar":False})
 
-st.markdown("""
-<div class="footer">
-    SAED Prototype • NLP berbasis aturan untuk penelitian KTI
-    <br>
-    Bukan alat diagnosis psikologis.
-</div>
-""", unsafe_allow_html=True)
+st.markdown("### ☷ Detail Indikator")
+cols=st.columns(2)
+for i,(k,v) in enumerate(scores.items()):
+    with cols[i%2]:
+        sev=severity(v)
+        st.markdown(f"""<div class="insight"><b>{k}</b>
+        <span style="float:right"><b>{sev}</b> · {v:.2f}</span>
+        <br><span class="small">{detail(k,v)}</span></div>""",unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
+
+# ---------- Deep analysis ----------
+st.markdown('<div class="card">', unsafe_allow_html=True)
+st.markdown("### 🔍 Analisis Mendalam")
+patterns = [
+("🔵 Pola Utama", f"Indikator utama adalah {peak} dengan skor {scores[peak]:.2f}. Kata/frasa yang terdeteksi: {', '.join(hits.get(peak,[])) or 'belum ada kata kunci spesifik; skor menggunakan baseline prototipe'}."),
+("🟠 Emosi & Tekanan", "Bahasa yang mengandung target, keberhasilan, kekhawatiran, atau evaluasi diri dapat menunjukkan campuran motivasi dan tekanan. Konteks kalimat tetap penting sebelum menarik kesimpulan."),
+("🟣 Dampak Potensial", "Jika pola ini sering muncul, pengguna dapat terbantu dengan membatasi pemicu perbandingan, memecah target menjadi langkah kecil, dan mengukur kemajuan berdasarkan perkembangan diri sendiri."),
+("🟢 Kekuatan", "Kemampuan mengenali pola pikiran dan menuliskan pengalaman secara reflektif merupakan modal untuk membangun kebiasaan evaluasi diri yang lebih sehat.")
+]
+for title,body in patterns:
+    st.markdown(f"<div class='insight'><b>{title}</b><br>{body}</div>",unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
+
+# ---------- Recommendations ----------
+st.markdown('<div class="tip">', unsafe_allow_html=True)
+st.markdown("### 🌱 Saran yang sesuai")
+st.write("Berdasarkan pola analisis, berikut beberapa saran yang dapat kamu terapkan:")
+recs=[
+"Fokus pada target dan progres pribadimu. Bandingkan diri dengan versi dirimu yang kemarin, bukan dengan pencapaian orang lain.",
+"Gunakan media sosial sebagai sumber inspirasi dan informasi, bukan sebagai tolok ukur nilai diri.",
+"Batasi paparan konten yang memicu perbandingan, terutama saat merasa cemas atau kurang percaya diri.",
+"Rayakan pencapaian kecil yang kamu raih. Konsistensi kecil tetap berarti besar dalam jangka panjang.",
+"Jaga rutinitas dasar: tidur cukup, bergerak/olahraga ringan, makan teratur, dan melakukan aktivitas yang kamu nikmati.",
+"Bicarakan perasaan dengan orang yang dipercaya ketika tekanan mulai terasa berat.",
+"Coba journaling singkat: tulis 1 hal yang sudah berhasil dilakukan dan 1 langkah kecil untuk besok.",
+"Ubah target besar menjadi tugas 10–20 menit agar kemajuan terasa lebih konkret.",
+"Gunakan kalimat yang lebih realistis: 'Aku sedang belajar' daripada 'Aku tidak mampu'.",
+"Atur jeda dari aplikasi atau akun yang membuatmu terus membandingkan diri.",
+"Catat pencapaian pribadi mingguan agar kemajuan yang sering tidak terlihat menjadi lebih nyata.",
+]
+for r in recs:
+    st.markdown(f"✅ {r}")
+st.markdown("<div style='margin-top:12px;padding:12px;border-radius:12px;background:#3b3a1d'>💡 <i>“Progres yang lambat tetaplah progres. Fokus pada perjalananmu sendiri.”</i></div>",unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
+
+with st.expander("🔎 Lihat teks setelah preprocessing"):
+    cleaned=re.sub(r'\s+',' ',re.sub(r'[^a-zA-ZÀ-ÿ0-9\s]',' ',text.lower())).strip()
+    st.code(cleaned or "Belum ada teks yang dianalisis.")
+
+st.markdown("<div style='text-align:center;color:#66759a;padding:25px'>SAED • Social Achievement Exposure Detector • Prototype NLP</div>",unsafe_allow_html=True)
