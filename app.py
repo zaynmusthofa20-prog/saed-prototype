@@ -348,4 +348,4 @@ st.markdown('</div>', unsafe_allow_html=True)
 # ---------- Chart ----------
 st.markdown('<div class="card">', unsafe_allow_html=True)
 st.markdown("### 📊 Ringkasan Indikator")
-st.caption("Semakin tinggi skor, semakin kuat in
+st.caption("Semakin tinggi skor, semakin kuat in")
