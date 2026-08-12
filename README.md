@@ -1,20 +1,6 @@
-# SAED Streamlit v3.0
+# SAED Streamlit v4
 
-Versi UI SAED yang diperbarui mengikuti mockup yang diberikan.
+UI diperbarui agar lebih dekat dengan screenshot referensi: dark navy, gradient biru/ungu, hasil analisis compact, kartu indikator dua kolom, dan layout responsif untuk HP.
 
-## File utama
-- `app.py`
-- `requirements.txt`
-
-## Deploy / update di Streamlit Cloud
-1. Upload `app.py` dan `requirements.txt` ke repository GitHub.
-2. Commit perubahan.
-3. Buka aplikasi di Streamlit Cloud.
-4. Streamlit Cloud akan otomatis mendeteksi commit baru dan melakukan redeploy.
-5. Jika belum berubah, buka Manage app lalu pilih Reboot app.
-
-## Jalankan lokal
-```bash
-pip install -r requirements.txt
-streamlit run app.py
-```
+## Update
+Ganti `app.py` dan `requirements.txt` di repository GitHub yang terhubung ke Streamlit Cloud, lalu commit. Jika belum otomatis berubah, pilih **Manage app → Reboot app**.
