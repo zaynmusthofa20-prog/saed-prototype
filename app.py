@@ -362,5 +362,6 @@ a,b=st.columns([1,2])
 with a:
     fig=go.Figure(go.Pie(values=[overall,100-overall], hole=.76, textinfo="none",
                          marker=dict(colors=["#20cfff","#1a2a58"])))
-    fig.update_layout(height=230, margin=dict(l=0,r=0,t=0,b=0), showlegend=False,
-                      paper_bgcolor="rg
+    fig.update_layout(height=230), margin=dict(l=0,r=0,t=0,b=0), showlegend=False,
+                      paper_bgcolor="rg"
+
