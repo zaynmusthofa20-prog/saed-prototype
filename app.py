@@ -1,3 +1,4 @@
+
 import re
 import streamlit as st
 import plotly.graph_objects as go
@@ -46,7 +47,7 @@ with st.sidebar:
     st.markdown("ℹ️ Tentang SAED")
     st.markdown("---")
     st.info("SAED adalah prototipe NLP untuk membaca pola bahasa terkait pencapaian sosial, perbandingan diri, kekhawatiran masa depan, dan evaluasi diri.")
-    st.caption("© 2026 SAED • Prototype v1.0")
+    st.caption("© 2026 SAED • Prototype v1.2")
 
 st.markdown(f"""
 <div class="hero">
@@ -61,19 +62,26 @@ st.markdown("")
 # ---------- Input ----------
 st.markdown('<div class="card">', unsafe_allow_html=True)
 st.markdown("### 📝 Masukkan teks yang ingin dianalisis")
-text = st.text_area("", placeholder="Tulis teks di sini... (misalnya keluhan, curhatan, atau opini)",
-                    height=130, max_chars=1000, label_visibility="collapsed")
+text = st.text_area(
+    "",
+    placeholder="Tulis teks di sini... (misalnya: Teman-teman saya sudah banyak yang sukses. Saya merasa tertinggal dan khawatir tidak akan bisa menyusul mereka.)",
+    height=150,
+    max_chars=1000,
+    label_visibility="collapsed",
+    key="saed_text"
+)
 c1, c2 = st.columns([4,1])
-analyze = c1.button("🔎  ANALISIS TEKS  ›", use_container_width=True, type="primary")
-reset = c2.button("↻  Reset", use_container_width=True)
+analyze = c1.button(
+    "🔎  ANALISIS TEKS  ›",
+    use_container_width=True,
+    type="primary",
+    key="saed_analyze_button"
+)
+reset = c2.button("↻  Reset", use_container_width=True, key="saed_reset_button")
 st.caption(f"{len(text)}/1000")
 st.markdown('</div>', unsafe_allow_html=True)
 
-if reset:
-    st.session_state.saed_result = None
-    st.rerun()
-
-# ---------- NLP engine v11: multi-signal sentence + paragraph analysis ----------
+# ---------- NLP engine v12: multi-signal sentence + paragraph analysis ----------
 # Rule-based prototype: membaca hubungan kata, kalimat, negasi, kontras,
 # sebab-akibat, intensifier, dan pola antar-kalimat. Bukan diagnosis psikologis.
 
@@ -299,12 +307,32 @@ def analyze_text(text):
     level = "Rendah" if overall < 35 else "Sedang" if overall < 65 else "Tinggi"
     return scores, evidence, overall, level, peak, sentences, links
 
-# Persist analysis so the result does not disappear on a Streamlit rerun.
+# Persist analysis so the result does not disappear after Streamlit reruns.
 if "saed_result" not in st.session_state:
     st.session_state.saed_result = None
+if "saed_last_text" not in st.session_state:
+    st.session_state.saed_last_text = ""
 
-if analyze and text.strip():
-    st.session_state.saed_result = analyze_text(text)
+if reset:
+    st.session_state.saed_result = None
+    st.session_state.saed_last_text = ""
+    st.session_state.saed_text = ""
+    st.rerun()
+
+if analyze:
+    clean_text = st.session_state.get("saed_text", "").strip()
+    if not clean_text:
+        st.session_state.saed_result = None
+        st.warning("⚠️ Masukkan teks terlebih dahulu sebelum menekan ANALISIS TEKS.")
+    else:
+        try:
+            st.session_state.saed_result = analyze_text(clean_text)
+            st.session_state.saed_last_text = clean_text
+            st.success("✅ Teks berhasil dianalisis. Hasil indikator dan saran diperbarui.")
+        except Exception as exc:
+            st.error("❌ Analisis gagal diproses. Silakan coba lagi dengan teks yang lebih singkat.")
+            st.session_state.saed_result = None
+            st.caption(f"Detail teknis: {type(exc).__name__}")
 
 if st.session_state.saed_result:
     scores, evidence, overall, level, peak, sentences, links = st.session_state.saed_result
@@ -334,18 +362,4 @@ with a:
     st.plotly_chart(fig,use_container_width=True,config={"displayModeBar":False})
 with b:
     st.markdown("### 📊 Hasil Analisis")
-    st.markdown(f"Pola yang terdeteksi: <span class='badge'>{peak}</span>",unsafe_allow_html=True)
-    if peak=="Belum dianalisis":
-        desc="Masukkan teks lalu tekan **ANALISIS TEKS**. SAED tidak mengisi skor secara otomatis agar hasil tidak menyesatkan."
-    elif peak=="Achievement Exposure":
-        desc="Teks menyebut paparan terhadap pencapaian pihak lain. Ini berbeda dari Social Comparison: paparan saja belum berarti pengguna membandingkan dirinya dengan orang lain."
-    else:
-        desc=f"Teks paling kuat menunjukkan pola **{peak}** berdasarkan frasa yang terdeteksi. Indikasi harus dibaca bersama konteks kalimat, bukan dianggap sebagai diagnosis."
-    st.write(desc)
-    st.caption("Catatan: SAED adalah prototipe analisis bahasa, bukan alat diagnosis psikologis.")
-st.markdown('</div>', unsafe_allow_html=True)
-
-# ---------- Chart ----------
-st.markdown('<div class="card">', unsafe_allow_html=True)
-st.markdown("### 📊 Ringkasan Indikator")
-st.caption("Semakin tinggi skor, semakin kuat in")
+    st.markdown(f"Pola yang terdeteksi: <")
