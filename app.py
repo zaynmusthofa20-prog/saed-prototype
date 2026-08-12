@@ -121,7 +121,7 @@ INDICATORS = {
 
 CONTRAST = re.compile(r"\b(tetapi|namun|sedangkan|sementara|walaupun|meskipun)\b")
 CAUSAL = re.compile(r"\b(karena|sehingga|akibatnya|setelah|gara-gara|membuat|menyebabkan)\b")
-SELF = re.compile(r"\b(aku|saya|diriku|diri saya|saya sendiri)\b")
+SELF = re.compile(r"\b(aku|diriku|diri saya|saya sendiri)\b|\bsaya\b(?!\s+(teman|kakak|adik|ibu|ayah|orang tua))")
 OTHERS = re.compile(r"\b(teman|mereka|dia|orang lain|rekan|kenalan)\b")
 NEGATION = re.compile(r"\b(tidak|tak|bukan|belum|tanpa)\b")
 
@@ -152,15 +152,70 @@ def contextual_links(sentences):
 def score_indicator(name, sentences, links):
     cfg = INDICATORS[name]
     evidence = sentence_evidence(sentences, cfg["evidence"])
-    score = min(0.85, len(evidence) * 0.27)
-    # Cross-sentence context strengthens a signal only when there is actual evidence.
+    joined = " ".join(sentences)
+
+    # Contextual patterns: these capture natural Indonesian phrasing where
+    # the relationship is clear even when no explicit "aku vs mereka" phrase exists.
+    contextual = {
+        "Achievement Exposure": [
+            r"\b(teman|orang lain|mereka|dia|rekan)\b.{0,120}\b(sudah|telah|punya|memiliki|mendapat|berhasil|sukses|lulus|naik|diterima)\b",
+            r"\b(melihat|lihat|melihat postingan|mendengar|tahu|mengetahui)\b.{0,120}\b(teman|orang lain|mereka|dia)\b.{0,100}\b(sukses|berhasil|punya|memiliki|pencapaian|prestasi)\b"
+        ],
+        "Social Comparison": [
+            r"\b(kapan|kapan ya|ingin|pengen|semoga)\b.{0,60}\b(bisa|dapat|punya|memiliki|seperti|kayak)\b.{0,80}\b(teman|mereka|dia|orang lain)\b",
+            r"\b(seperti|kayak|sama seperti|sebanding dengan)\b.{0,80}\b(teman|mereka|dia|orang lain)\b",
+            r"\b(teman|mereka|dia|orang lain)\b.{0,100}\b(sudah|telah|punya|memiliki)\b.{0,100}\b(kapan|ingin|pengen|bisa)\b"
+        ],
+        "Perceived Lagging": [
+            r"\b(teman|mereka|dia|orang lain)\b.{0,80}\b(sudah|telah)\b.{0,100}\b(kapan|kapan ya|sementara|sedangkan)\b",
+            r"\b(kapan|kapan ya)\b.{0,80}\b(bisa|punya|memiliki|mencapai)\b.{0,100}\b(seperti|kayak|teman|mereka)\b",
+            r"\b(umur|usia)\b.{0,60}\b(20|21|22|23|24|25|26|27|28|29|30)\b.{0,120}\b(sudah|telah|punya|memiliki)\b"
+        ],
+        "Future Uncertainty": [
+            r"\b(kapan|kapan ya|entah kapan|belum tahu|tidak tahu)\b.{0,100}\b(bisa|akan|mampu|punya|mencapai|mendapat)\b",
+            r"\b(nggak tahu|gak tahu|tidak tahu|belum tahu)\b.{0,100}\b(masa depan|ke depan|nanti|karier|pekerjaan|hidup)\b"
+        ],
+        "Negative Self-Evaluation": [
+            r"\b(aku|saya|diriku|diri saya)\b.{0,80}\b(gagal|bodoh|buruk|tidak mampu|nggak mampu|gak mampu|tidak cukup|nggak cukup|tidak berguna|tidak layak)\b",
+            r"\b(aku|saya)\b.{0,80}\b(lebih rendah|kalah|payah|jelek)\b"
+        ]
+    }
+
+    contextual_hits = []
+    for pat in contextual.get(name, []):
+        m = re.search(pat, joined)
+        if m:
+            contextual_hits.append(m.group(0))
+
+    # Merge evidence from exact sentence patterns and contextual paragraph patterns.
+    if contextual_hits:
+        for hit in contextual_hits:
+            # Attach the nearest sentence as evidence.
+            nearest = next(((i+1, sent) for i, sent in enumerate(sentences) if hit[:25] in sent), None)
+            if nearest:
+                evidence.append(nearest)
+            elif sentences:
+                evidence.append((1, sentences[0]))
+
+    evidence = list(dict.fromkeys(evidence))
+
+    # Scoring is evidence-driven. One contextual relation can produce a meaningful
+    # signal, but a single generic keyword cannot.
+    score = min(0.80, len(evidence) * 0.27)
+    if contextual_hits:
+        score = max(score, 0.42)
     if evidence and links:
         score += min(0.15, 0.05 * len(links))
-    # Explicit self/other relation is especially important for comparison and lagging.
-    joined = " ".join(sentences)
+
+    # Strong self/other relation for comparison and lagging.
     if name in ("Social Comparison", "Perceived Lagging"):
-        if SELF.search(joined) and OTHERS.search(joined) and (CONTRAST.search(joined) or len(sentences) > 1):
-            score += 0.10
+        relation = (
+            re.search(r"\b(seperti|kayak|dibanding|berbeda dengan|lebih .{0,20} daripada)\b", joined)
+            and re.search(r"\b(teman|mereka|dia|orang lain)\b", joined)
+        )
+        if relation:
+            score += 0.12
+
     return round(min(score, 1.0), 2), evidence
 
 def analyze_text(t):
