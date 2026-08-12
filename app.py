@@ -276,9 +276,10 @@ st.markdown('<div class="card">', unsafe_allow_html=True)
 st.markdown("### 📊 Ringkasan Indikator")
 st.caption("Semakin tinggi skor, semakin kuat indikasi pola pada teks.")
 fig=go.Figure()
-fig.add_trace(go.Bar(x=labels,y=list(scores.values()),text=[f"{v:.2f}" for v in scores.values()],
+percent_values = [round(v * 100) for v in scores.values()]
+fig.add_trace(go.Bar(x=labels,y=percent_values,text=[f"{v}%" for v in percent_values],
                      textposition="outside",marker_color=colors))
-fig.update_yaxes(range=[0,1.12],dtick=.2)
+fig.update_yaxes(range=[0,105],dtick=20,ticksuffix="%")
 fig.update_layout(height=370,margin=dict(l=20,r=20,t=30,b=90),paper_bgcolor="rgba(0,0,0,0)",
                   plot_bgcolor="rgba(0,0,0,0)",font_color="#dbe6ff",showlegend=False)
 st.plotly_chart(fig,use_container_width=True,config={"displayModeBar":False})
@@ -288,10 +289,14 @@ cols=st.columns(2)
 for i,(k,v) in enumerate(scores.items()):
     with cols[i%2]:
         sev=severity(v)
+        pct = int(round(v * 100))
         st.markdown(f"""<div class="insight"><b>{k}</b>
-        <span style="float:right"><b>{sev}</b> · {v:.2f}</span>
+        <span style="float:right"><b>{sev}</b> · {pct}%</span>
         <br><span class="small">{detail(k,v)}</span>
-        <br><span class="small">Bukti kalimat: {" | ".join([f"Kalimat {n}: {sent}" for n, sent in evidence.get(k, [])]) if evidence.get(k) else "Tidak ada bukti kalimat yang memenuhi pola."}</span></div>""",unsafe_allow_html=True)
+        <div style="margin:10px 0 8px;height:9px;background:#182a58;border-radius:99px;overflow:hidden">
+          <div style="width:{pct}%;height:100%;background:linear-gradient(90deg,#20cfff,#7446f5);border-radius:99px;transition:width .6s ease"></div>
+        </div>
+        <span class="small">Bukti kalimat: {" | ".join([f"Kalimat {n}: {sent}" for n, sent in evidence.get(k, [])]) if evidence.get(k) else "Tidak ada bukti kalimat yang memenuhi pola."}</span></div>""",unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------- Deep analysis ----------
@@ -299,7 +304,7 @@ st.markdown('<div class="card">', unsafe_allow_html=True)
 st.markdown("### 🔍 Analisis Mendalam")
 peak_hits = evidence.get(peak, []) if peak != "Belum dianalisis" else []
 patterns = [
-("🔵 Pola Utama", f"Indikator tertinggi: {peak} ({scores.get(peak,0):.2f}). Bukti bahasa: {', '.join(peak_hits) if peak_hits else 'belum ada bukti frasa spesifik'}."),
+("🔵 Pola Utama", f"Indikator tertinggi: {peak} ({round(scores.get(peak,0)*100)}%). Bukti bahasa: {', '.join(peak_hits) if peak_hits else 'belum ada bukti frasa spesifik'}."),
 ("🟠 Pembedaan Indikator", "Achievement Exposure hanya mengukur penyebutan/paparan terhadap pencapaian orang lain. Social Comparison baru naik jika teks menunjukkan tindakan atau penilaian membandingkan diri dengan orang lain."),
 ("🟣 Konteks & Negasi", "Kata seperti 'tidak takut' atau 'tidak tertinggal' tidak seharusnya dihitung sama dengan pernyataan positif yang menunjukkan kekhawatiran. Prototype ini menggunakan pemeriksaan negasi sederhana."),
 ("🟢 Batasan", "Skor berasal dari rule-based keyword/phrase matching. Untuk akurasi produksi, sistem sebaiknya dilatih dan diuji dengan dataset berlabel serta evaluasi precision, recall, F1, dan confusion matrix.")
@@ -348,4 +353,4 @@ with st.expander("🔎 Lihat proses analisis kalimat & paragraf"):
     else:
         st.caption("Belum ada teks yang dianalisis.")
 
-st.markdown("<div style='text-align:center;color:#66759a;padding:25px'>SAED • Social Achievement Exposure Detector • Prototype NLP</div>",unsafe_allow_html=True)
+st.markdown("<div style='text-align:center;color:#66759a;padding:25px'>SAED • Social Achievement Exposure Detector • Prototype NLP</div>",unsafe_a
