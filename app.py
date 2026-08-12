@@ -1,4 +1,3 @@
-
 import re
 import streamlit as st
 import plotly.graph_objects as go
@@ -237,13 +236,13 @@ for i,(k,v) in enumerate(scores.items()):
         st.markdown(f"""<div class="insight"><b>{k}</b>
         <span style="float:right"><b>{sev}</b> · {v:.2f}</span>
         <br><span class="small">{detail(k,v)}</span>
-        <br><span class="small">Bukti: {", ".join(hits.get(k,[])) if hits.get(k) else "Tidak ada frasa indikator yang terdeteksi."}</span></div>""",unsafe_allow_html=True)
+        <br><span class="small">Bukti kalimat: {" | ".join([f"Kalimat {n}: {sent}" for n, sent in evidence.get(k, [])]) if evidence.get(k) else "Tidak ada bukti kalimat yang memenuhi pola."}</span></div>""",unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------- Deep analysis ----------
 st.markdown('<div class="card">', unsafe_allow_html=True)
 st.markdown("### 🔍 Analisis Mendalam")
-peak_hits = hits.get(peak, []) if peak != "Belum dianalisis" else []
+peak_hits = evidence.get(peak, []) if peak != "Belum dianalisis" else []
 patterns = [
 ("🔵 Pola Utama", f"Indikator tertinggi: {peak} ({scores.get(peak,0):.2f}). Bukti bahasa: {', '.join(peak_hits) if peak_hits else 'belum ada bukti frasa spesifik'}."),
 ("🟠 Pembedaan Indikator", "Achievement Exposure hanya mengukur penyebutan/paparan terhadap pencapaian orang lain. Social Comparison baru naik jika teks menunjukkan tindakan atau penilaian membandingkan diri dengan orang lain."),
@@ -295,4 +294,3 @@ with st.expander("🔎 Lihat proses analisis kalimat & paragraf"):
         st.caption("Belum ada teks yang dianalisis.")
 
 st.markdown("<div style='text-align:center;color:#66759a;padding:25px'>SAED • Social Achievement Exposure Detector • Prototype NLP</div>",unsafe_allow_html=True)
-              
