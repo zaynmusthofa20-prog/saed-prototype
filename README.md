@@ -1,15 +1,20 @@
-# SAED - Social Achievement Exposure Detector
+# SAED Streamlit v3.0
 
-Prototype NLP berbasis aturan menggunakan Streamlit.
+Versi UI SAED yang diperbarui mengikuti mockup yang diberikan.
 
-## Menjalankan lokal
+## File utama
+- `app.py`
+- `requirements.txt`
 
+## Deploy / update di Streamlit Cloud
+1. Upload `app.py` dan `requirements.txt` ke repository GitHub.
+2. Commit perubahan.
+3. Buka aplikasi di Streamlit Cloud.
+4. Streamlit Cloud akan otomatis mendeteksi commit baru dan melakukan redeploy.
+5. Jika belum berubah, buka Manage app lalu pilih Reboot app.
+
+## Jalankan lokal
 ```bash
 pip install -r requirements.txt
 streamlit run app.py
 ```
-
-## Deploy ke Streamlit Cloud
-
-Upload seluruh isi folder ini ke repository GitHub.
-Pastikan `app.py` dan `requirements.txt` berada di root repository.
