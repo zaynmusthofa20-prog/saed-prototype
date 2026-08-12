@@ -73,52 +73,126 @@ st.markdown('</div>', unsafe_allow_html=True)
 if reset:
     st.rerun()
 
-# ---------- NLP prototype ----------
-def analyze_text(t):
-    s=t.lower()
-    groups = {
-        "Achievement Exposure": ["sukses","berhasil","prestasi","gaji","jabatan","lulus","menang","pencapaian","orang lain","teman","linkedin","instagram"],
-        "Future Uncertainty": ["takut","khawatir","masa depan","besok","nanti","gagal","cemas","tidak yakin","bingung"],
-        "Negative Self-Evaluation": ["aku tidak","saya tidak","kurang","jelek","bodoh","gagal","tidak mampu","rendah diri","tidak cukup","ketinggalan"],
-        "Perceived Lagging": ["tertinggal","ketinggalan","belum punya","sementara mereka","sedangkan dia","telat","lambat"],
-        "Social Comparison": ["dibanding","bandingkan","mereka lebih","dia lebih","teman-teman","orang lain","seumuran","lebih sukses"]
+# ---------- NLP prototype v3: sentence + paragraph context ----------
+# Tidak sekadar mencocokkan kata. Sistem mencari pola hubungan antarkalimat,
+# kontras, sebab-akibat, self-reference, social reference, dan evaluasi.
+# Tetap rule-based prototype; untuk produksi dapat diganti/ditambah model transformer.
+
+INDICATORS = {
+    "Achievement Exposure": {
+        "evidence": [
+            r"(teman|orang lain|mereka|dia|rekan|kenalan).{0,80}(sukses|berhasil|prestasi|pencapaian|diterima kerja|naik jabatan|gaji|lulus|menang)",
+            r"(melihat|melihat postingan|membaca|mendengar|mengetahui|menyaksikan).{0,80}(sukses|berhasil|prestasi|pencapaian)"
+        ],
+        "label": "Paparan terhadap pencapaian pihak lain."
+    },
+    "Social Comparison": {
+        "evidence": [
+            r"(aku|saya|diriku|diri saya).{0,80}(dibanding|berbeda dengan|kalah dari|lebih rendah|tidak sebaik|tidak seperti).{0,80}(mereka|dia|teman|orang lain)",
+            r"(mereka|dia|teman|orang lain).{0,60}(lebih sukses|lebih maju|lebih kaya|lebih baik).{0,60}(daripada|dibanding|sedangkan|sementara).{0,60}(aku|saya)",
+            r"(seumuran|satu usia|umur kami sama).{0,100}(sedangkan|sementara|tetapi).{0,100}(aku|saya)"
+        ],
+        "label": "Perbandingan eksplisit antara diri dan pihak lain."
+    },
+    "Perceived Lagging": {
+        "evidence": [
+            r"(aku|saya|diriku|diri saya).{0,80}(merasa|terasa|sepertinya).{0,50}(tertinggal|ketinggalan|terlambat)",
+            r"(aku|saya).{0,80}(belum|masih belum).{0,80}(punya|mencapai|mendapatkan|berhasil).{0,100}(seperti|selevel|seusia|dibanding)",
+            r"(mereka|teman|orang lain).{0,100}(sudah|telah).{0,100}(sedangkan|sementara).{0,100}(aku|saya)"
+        ],
+        "label": "Persepsi bahwa perkembangan diri tertinggal dari target atau kelompok pembanding."
+    },
+    "Future Uncertainty": {
+        "evidence": [
+            r"(aku|saya).{0,80}(takut|khawatir|cemas|bingung|tidak yakin).{0,100}(masa depan|ke depan|nanti|karier|pekerjaan)",
+            r"(aku|saya).{0,80}(tidak tahu|belum tahu).{0,100}(harus|mau|akan).{0,100}(ke mana|bagaimana|apa yang dilakukan)",
+            r"(takut|khawatir|cemas).{0,80}(gagal|tidak berhasil|tidak punya masa depan)"
+        ],
+        "label": "Ketidakpastian atau kekhawatiran yang diarahkan ke masa depan."
+    },
+    "Negative Self-Evaluation": {
+        "evidence": [
+            r"(aku|saya|diriku|diri saya).{0,60}(tidak cukup|tidak mampu|tidak berguna|bodoh|buruk|gagal|mengecewakan|rendah diri)",
+            r"(aku|saya).{0,80}(merasa|menganggap|menilai).{0,80}(gagal|tidak mampu|tidak cukup|tidak bagus|tidak berguna)",
+            r"(aku|saya).{0,80}(tidak percaya diri|meragukan kemampuan|merasa tidak layak)"
+        ],
+        "label": "Evaluasi negatif yang diarahkan kepada diri sendiri."
     }
-    weights = {"Achievement Exposure":1.0,"Future Uncertainty":.82,"Negative Self-Evaluation":.78,"Perceived Lagging":.68,"Social Comparison":.72}
-    scores={}
-    hits={}
-    for k, words in groups.items():
-        found=[w for w in words if w in s]
-        hits[k]=found
-        base=min(1.0, len(found)*0.18 + (0.25 if found else 0))
-        # richer heuristic for longer texts
-        scores[k]=round(min(1.0, base + (0.08 if len(s)>180 and found else 0)),2)
-    if not any(hits.values()):
-        scores={"Achievement Exposure":.32,"Future Uncertainty":.24,"Negative Self-Evaluation":.20,"Perceived Lagging":.16,"Social Comparison":.14}
-    overall=round(sum(scores.values())/len(scores)*100)
-    peak=max(scores,key=scores.get)
-    level="Rendah" if overall<35 else "Sedang" if overall<65 else "Tinggi"
-    return scores,hits,overall,level,peak
+}
+
+CONTRAST = re.compile(r"\b(tetapi|namun|sedangkan|sementara|walaupun|meskipun)\b")
+CAUSAL = re.compile(r"\b(karena|sehingga|akibatnya|setelah|gara-gara|membuat|menyebabkan)\b")
+SELF = re.compile(r"\b(aku|saya|diriku|diri saya|saya sendiri)\b")
+OTHERS = re.compile(r"\b(teman|mereka|dia|orang lain|rekan|kenalan)\b")
+NEGATION = re.compile(r"\b(tidak|tak|bukan|belum|tanpa)\b")
+
+def split_sentences(text):
+    text = re.sub(r"\s+", " ", text.strip())
+    return [x.strip() for x in re.split(r"(?<=[.!?])\s+|[\n]+", text) if x.strip()]
+
+def normalize(text):
+    return re.sub(r"\s+", " ", re.sub(r"[^a-zA-ZÀ-ÿ0-9\s.!?]", " ", text.lower())).strip()
+
+def sentence_evidence(sentences, patterns):
+    found = []
+    for i, sent in enumerate(sentences):
+        for pat in patterns:
+            if re.search(pat, sent):
+                found.append((i + 1, sent))
+                break
+    return found
+
+def contextual_links(sentences):
+    links = []
+    for i in range(len(sentences) - 1):
+        pair = sentences[i] + " " + sentences[i+1]
+        if (SELF.search(pair) and OTHERS.search(pair)) or CONTRAST.search(pair) or CAUSAL.search(pair):
+            links.append((i + 1, i + 2, pair))
+    return links
+
+def score_indicator(name, sentences, links):
+    cfg = INDICATORS[name]
+    evidence = sentence_evidence(sentences, cfg["evidence"])
+    score = min(0.85, len(evidence) * 0.27)
+    # Cross-sentence context strengthens a signal only when there is actual evidence.
+    if evidence and links:
+        score += min(0.15, 0.05 * len(links))
+    # Explicit self/other relation is especially important for comparison and lagging.
+    joined = " ".join(sentences)
+    if name in ("Social Comparison", "Perceived Lagging"):
+        if SELF.search(joined) and OTHERS.search(joined) and (CONTRAST.search(joined) or len(sentences) > 1):
+            score += 0.10
+    return round(min(score, 1.0), 2), evidence
+
+def analyze_text(t):
+    clean = normalize(t)
+    sentences = split_sentences(clean)
+    links = contextual_links(sentences)
+    scores, evidence = {}, {}
+    for name in INDICATORS:
+        scores[name], evidence[name] = score_indicator(name, sentences, links)
+
+    total = sum(scores.values())
+    overall = round(total / len(scores) * 100)
+    peak = max(scores, key=scores.get) if total else "Belum terdeteksi"
+    level = "Rendah" if overall < 35 else "Sedang" if overall < 65 else "Tinggi"
+    return scores, evidence, overall, level, peak, sentences, links
 
 if analyze:
-    scores,hits,overall,level,peak=analyze_text(text)
+    scores, evidence, overall, level, peak, sentences, links = analyze_text(text)
 else:
-    scores={"Achievement Exposure":1.0,"Future Uncertainty":.58,"Negative Self-Evaluation":.42,"Perceived Lagging":.28,"Social Comparison":.21}
-    hits={k:[] for k in scores}
-    overall=56; level="Sedang"; peak="Achievement Exposure"
+    scores = {k: 0.0 for k in INDICATORS}
+    evidence = {k: [] for k in INDICATORS}
+    overall, level, peak, sentences, links = 0, "Rendah", "Belum dianalisis", [], []
 
-labels=list(scores.keys())
-colors=["#20a9ff","#ffae32","#22c4ca","#7446f5","#f23883"]
+labels = list(scores.keys())
+colors = ["#20a9ff","#ffae32","#22c4ca","#7446f5","#f23883"]
+
 def severity(v):
-    return "Rendah" if v<.35 else "Sedang" if v<.65 else "Parah"
-def detail(k,v):
-    d={
-    "Achievement Exposure":"Paparan terhadap pencapaian orang lain dan standar sosial yang terlihat dalam teks.",
-    "Future Uncertainty":"Terdapat sinyal kekhawatiran, ketidakpastian, atau tekanan terhadap masa depan.",
-    "Negative Self-Evaluation":"Muncul penilaian diri yang kurang positif atau keraguan terhadap kemampuan pribadi.",
-    "Perceived Lagging":"Ada kesan tertinggal dari target, teman sebaya, atau ritme perkembangan yang diharapkan.",
-    "Social Comparison":"Ada kecenderungan membandingkan kondisi diri dengan pencapaian orang lain."
-    }
-    return d[k]
+    return "Rendah" if v < .35 else "Sedang" if v < .65 else "Tinggi"
+
+def detail(k, v):
+    return INDICATORS[k]["label"]
 
 # ---------- Result ----------
 st.markdown('<div class="card">', unsafe_allow_html=True)
@@ -133,10 +207,12 @@ with a:
 with b:
     st.markdown("### 📊 Hasil Analisis")
     st.markdown(f"Pola yang terdeteksi: <span class='badge'>{peak}</span>",unsafe_allow_html=True)
-    if peak=="Achievement Exposure":
-        desc="Teks menunjukkan adanya paparan terhadap pencapaian pihak lain. Pola ini dapat berkaitan dengan fokus pada standar sosial, namun belum otomatis berarti perbandingan diri yang kuat."
+    if peak=="Belum dianalisis":
+        desc="Masukkan teks lalu tekan **ANALISIS TEKS**. SAED tidak mengisi skor secara otomatis agar hasil tidak menyesatkan."
+    elif peak=="Achievement Exposure":
+        desc="Teks menyebut paparan terhadap pencapaian pihak lain. Ini berbeda dari Social Comparison: paparan saja belum berarti pengguna membandingkan dirinya dengan orang lain."
     else:
-        desc=f"Teks paling kuat menunjukkan pola **{peak}**. Indikasinya perlu dilihat bersama konteks kalimat, intensitas emosi, dan indikator lainnya."
+        desc=f"Teks paling kuat menunjukkan pola **{peak}** berdasarkan frasa yang terdeteksi. Indikasi harus dibaca bersama konteks kalimat, bukan dianggap sebagai diagnosis."
     st.write(desc)
     st.caption("Catatan: SAED adalah prototipe analisis bahasa, bukan alat diagnosis psikologis.")
 st.markdown('</div>', unsafe_allow_html=True)
@@ -160,17 +236,19 @@ for i,(k,v) in enumerate(scores.items()):
         sev=severity(v)
         st.markdown(f"""<div class="insight"><b>{k}</b>
         <span style="float:right"><b>{sev}</b> · {v:.2f}</span>
-        <br><span class="small">{detail(k,v)}</span></div>""",unsafe_allow_html=True)
+        <br><span class="small">{detail(k,v)}</span>
+        <br><span class="small">Bukti: {", ".join(hits.get(k,[])) if hits.get(k) else "Tidak ada frasa indikator yang terdeteksi."}</span></div>""",unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------- Deep analysis ----------
 st.markdown('<div class="card">', unsafe_allow_html=True)
 st.markdown("### 🔍 Analisis Mendalam")
+peak_hits = hits.get(peak, []) if peak != "Belum dianalisis" else []
 patterns = [
-("🔵 Pola Utama", f"Indikator utama adalah {peak} dengan skor {scores[peak]:.2f}. Kata/frasa yang terdeteksi: {', '.join(hits.get(peak,[])) or 'belum ada kata kunci spesifik; skor menggunakan baseline prototipe'}."),
-("🟠 Emosi & Tekanan", "Bahasa yang mengandung target, keberhasilan, kekhawatiran, atau evaluasi diri dapat menunjukkan campuran motivasi dan tekanan. Konteks kalimat tetap penting sebelum menarik kesimpulan."),
-("🟣 Dampak Potensial", "Jika pola ini sering muncul, pengguna dapat terbantu dengan membatasi pemicu perbandingan, memecah target menjadi langkah kecil, dan mengukur kemajuan berdasarkan perkembangan diri sendiri."),
-("🟢 Kekuatan", "Kemampuan mengenali pola pikiran dan menuliskan pengalaman secara reflektif merupakan modal untuk membangun kebiasaan evaluasi diri yang lebih sehat.")
+("🔵 Pola Utama", f"Indikator tertinggi: {peak} ({scores.get(peak,0):.2f}). Bukti bahasa: {', '.join(peak_hits) if peak_hits else 'belum ada bukti frasa spesifik'}."),
+("🟠 Pembedaan Indikator", "Achievement Exposure hanya mengukur penyebutan/paparan terhadap pencapaian orang lain. Social Comparison baru naik jika teks menunjukkan tindakan atau penilaian membandingkan diri dengan orang lain."),
+("🟣 Konteks & Negasi", "Kata seperti 'tidak takut' atau 'tidak tertinggal' tidak seharusnya dihitung sama dengan pernyataan positif yang menunjukkan kekhawatiran. Prototype ini menggunakan pemeriksaan negasi sederhana."),
+("🟢 Batasan", "Skor berasal dari rule-based keyword/phrase matching. Untuk akurasi produksi, sistem sebaiknya dilatih dan diuji dengan dataset berlabel serta evaluasi precision, recall, F1, dan confusion matrix.")
 ]
 for title,body in patterns:
     st.markdown(f"<div class='insight'><b>{title}</b><br>{body}</div>",unsafe_allow_html=True)
@@ -180,27 +258,41 @@ st.markdown('</div>', unsafe_allow_html=True)
 st.markdown('<div class="tip">', unsafe_allow_html=True)
 st.markdown("### 🌱 Saran yang sesuai")
 st.write("Berdasarkan pola analisis, berikut beberapa saran yang dapat kamu terapkan:")
-recs=[
-"Fokus pada target dan progres pribadimu. Bandingkan diri dengan versi dirimu yang kemarin, bukan dengan pencapaian orang lain.",
-"Gunakan media sosial sebagai sumber inspirasi dan informasi, bukan sebagai tolok ukur nilai diri.",
-"Batasi paparan konten yang memicu perbandingan, terutama saat merasa cemas atau kurang percaya diri.",
-"Rayakan pencapaian kecil yang kamu raih. Konsistensi kecil tetap berarti besar dalam jangka panjang.",
-"Jaga rutinitas dasar: tidur cukup, bergerak/olahraga ringan, makan teratur, dan melakukan aktivitas yang kamu nikmati.",
-"Bicarakan perasaan dengan orang yang dipercaya ketika tekanan mulai terasa berat.",
-"Coba journaling singkat: tulis 1 hal yang sudah berhasil dilakukan dan 1 langkah kecil untuk besok.",
-"Ubah target besar menjadi tugas 10–20 menit agar kemajuan terasa lebih konkret.",
-"Gunakan kalimat yang lebih realistis: 'Aku sedang belajar' daripada 'Aku tidak mampu'.",
-"Atur jeda dari aplikasi atau akun yang membuatmu terus membandingkan diri.",
-"Catat pencapaian pribadi mingguan agar kemajuan yang sering tidak terlihat menjadi lebih nyata.",
-]
+recs=[]
+if scores["Achievement Exposure"] >= .35:
+    recs += ["Pisahkan fakta dari interpretasi: keberhasilan orang lain adalah fakta tentang mereka, bukan ukuran nilai dirimu.",
+             "Atur jeda dari konten pencapaian jika setelah melihatnya kamu mulai mengevaluasi hidup sendiri."]
+if scores["Social Comparison"] >= .35:
+    recs += ["Ketika membandingkan diri, tulis apa yang benar-benar kamu ketahui tentang hidupmu dan apa yang hanya asumsi tentang orang lain.",
+             "Ubah pertanyaan 'mengapa aku tidak seperti mereka?' menjadi 'langkah apa yang realistis untuk kondisiku sekarang?'"]
+if scores["Perceived Lagging"] >= .35:
+    recs += ["Tentukan milestone pribadi berdasarkan kondisi dan prioritasmu, bukan timeline teman sebaya.",
+             "Ukur progres dengan perubahan dari titik awalmu sendiri."]
+if scores["Negative Self-Evaluation"] >= .35:
+    recs += ["Ganti penilaian menyeluruh seperti 'aku gagal' dengan evaluasi spesifik tentang situasi yang belum berhasil.",
+             "Catat bukti kemampuan, usaha, dan kemajuan kecil agar evaluasi diri lebih seimbang."]
+if scores["Future Uncertainty"] >= .35:
+    recs += ["Pisahkan hal yang bisa dikendalikan hari ini dari hal yang belum bisa dipastikan.",
+             "Pilih satu tindakan kecil untuk 24 jam ke depan daripada mencoba memecahkan seluruh masa depan sekaligus."]
+if not recs:
+    recs = ["Belum ada indikator yang cukup kuat. Gunakan hasil ini sebagai refleksi, bukan label diri.",
+            "Jika ingin analisis lebih akurat, masukkan satu paragraf utuh agar hubungan antar-kalimat dapat dibaca."]
+
 for r in recs:
     st.markdown(f"✅ {r}")
 st.markdown("<div style='margin-top:12px;padding:12px;border-radius:12px;background:#3b3a1d'>💡 <i>“Progres yang lambat tetaplah progres. Fokus pada perjalananmu sendiri.”</i></div>",unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)
 
-with st.expander("🔎 Lihat teks setelah preprocessing"):
-    cleaned=re.sub(r'\s+',' ',re.sub(r'[^a-zA-ZÀ-ÿ0-9\s]',' ',text.lower())).strip()
-    st.code(cleaned or "Belum ada teks yang dianalisis.")
+with st.expander("🔎 Lihat proses analisis kalimat & paragraf"):
+    if sentences:
+        st.markdown("**Segmentasi kalimat:**")
+        for i, sent in enumerate(sentences, 1):
+            st.markdown(f"- **Kalimat {i}:** {sent}")
+        st.markdown(f"**Hubungan konteks terdeteksi:** {len(links)}")
+        for x, y, pair in links:
+            st.caption(f"Kalimat {x} ↔ {y}: konteks berpotensi saling terkait.")
+    else:
+        st.caption("Belum ada teks yang dianalisis.")
 
 st.markdown("<div style='text-align:center;color:#66759a;padding:25px'>SAED • Social Achievement Exposure Detector • Prototype NLP</div>",unsafe_allow_html=True)
-  
+              
