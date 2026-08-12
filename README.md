@@ -1,6 +1,15 @@
-# SAED Streamlit v4
+# SAED - Social Achievement Exposure Detector
 
-UI diperbarui agar lebih dekat dengan screenshot referensi: dark navy, gradient biru/ungu, hasil analisis compact, kartu indikator dua kolom, dan layout responsif untuk HP.
+Prototype NLP berbasis aturan menggunakan Streamlit.
 
-## Update
-Ganti `app.py` dan `requirements.txt` di repository GitHub yang terhubung ke Streamlit Cloud, lalu commit. Jika belum otomatis berubah, pilih **Manage app → Reboot app**.
+## Menjalankan lokal
+
+```bash
+pip install -r requirements.txt
+streamlit run app.py
+```
+
+## Deploy ke Streamlit Cloud
+
+Upload seluruh isi folder ini ke repository GitHub.
+Pastikan `app.py` dan `requirements.txt` berada di root repository.
