@@ -1,16 +1,11 @@
-# SAED Prototype v3 — Sentence & Paragraph Analysis
+# SAED Prototype v8 — Future Uncertainty Sensitive
 
-Versi ini mengubah analisis dari keyword-only menjadi **sentence + paragraph context**.
+Peningkatan utama:
+- Future Uncertainty lebih peka terhadap kekhawatiran dan ketidakpastian masa depan.
+- Mengenali pertanyaan waktu: "kapan", "kapan ya", "kapan kira-kira".
+- Mengenali kemungkinan: "mungkin", "kemungkinan", "entah", "apakah", "bisakah", "mungkinkah".
+- Mengenali pola "takut/khawatir + tidak bisa/gagal/kalah".
+- Mengenali "belum tahu", "tidak yakin", "masih ragu".
+- Tetap mempertimbangkan konteks kalimat/paragraf.
 
-Fitur:
-- segmentasi kalimat
-- evidence berbasis pola kalimat
-- hubungan antar-kalimat
-- kontras (tetapi, namun, sedangkan, dll.)
-- sebab-akibat (karena, sehingga, setelah, dll.)
-- relasi diri vs orang lain
-- evidence snippet per indikator
-- rekomendasi kondisional berdasarkan indikator
-
-Catatan: tetap merupakan prototype rule-based, bukan diagnosis psikologis. Untuk produksi disarankan menambahkan model NLP/transformer dan dataset berlabel.
-
+Prototype rule-based; bukan diagnosis psikologis.
