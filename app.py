@@ -78,6 +78,23 @@ div.stButton>button{border-radius:14px;font-weight:850;min-height:2.8rem}
 .footer{text-align:center;color:#77819e;font-size:.76rem;margin-top:1.4rem}
 @media(max-width:650px){.result-wrap{grid-template-columns:1fr}.detail-grid{grid-template-columns:1fr}.proto{float:none;margin:.7rem 0 0;display:inline-block}}
 </style>
+<style>
+.block-container{max-width:880px!important;padding:0.55rem 0.55rem 2.5rem!important}
+.stApp{background:radial-gradient(circle at 50% -5%,rgba(47,69,190,.45),transparent 30%),#050914!important}
+.top-header{border-radius:24px!important;background:linear-gradient(135deg,#123d9b,#172d78 52%,#28176a)!important}
+.logo-title{font-size:2rem!important}
+.subtitle{font-size:.85rem!important}
+.section-title{font-size:1.22rem!important}
+.result-wrap{display:grid;grid-template-columns:190px 1fr;gap:12px}
+.level-box{min-height:190px!important;display:flex;align-items:center;justify-content:center}
+.result-card{padding:1rem!important}
+.pattern-badge{background:linear-gradient(90deg,#1871cf,#394bdd)!important;color:#69ddff!important}
+.chart-card,.indicator-card,.advice-box{box-shadow:0 12px 30px rgba(0,0,0,.22)!important}
+.indicator-grid{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}
+@media(max-width:600px){.result-wrap{grid-template-columns:1fr 1.45fr}.level-box{min-height:175px}.indicator-grid{grid-template-columns:1fr 1fr}.indicator-name{font-size:.85rem}}
+@media(max-width:430px){.result-wrap{grid-template-columns:1fr}.level-box{min-height:165px}}
+</style>
+
 """, unsafe_allow_html=True)
 
 st.markdown("""
@@ -193,6 +210,8 @@ if analyze:
     html+='</div>'
     st.markdown(html,unsafe_allow_html=True)
 
+    st.markdown("</div>", unsafe_allow_html=True)
+
     st.markdown('<div class="section-title">🌱 Saran yang sesuai</div>',unsafe_allow_html=True)
     advice=ADVICE.get(pat,["Coba gunakan hasil ini sebagai bahan refleksi, bukan sebagai diagnosis."])
     box='<div class="advice-box"><div style="font-size:1.35rem;font-weight:900">🌱 Saran yang sesuai</div><div style="color:#bdebe4;margin:.2rem 0 .6rem">Berdasarkan hasil analisis, berikut beberapa saran yang dapat kamu terapkan:</div>'
@@ -204,4 +223,4 @@ if analyze:
         st.code(clean_text(text))
 
 st.markdown('<div class="footer">SAED Prototype • NLP berbasis aturan untuk penelitian KTI<br>Bukan alat diagnosis psikologis.</div>',unsafe_allow_html=True)
-    
+        
