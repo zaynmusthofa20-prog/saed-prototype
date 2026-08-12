@@ -1,17 +1,15 @@
-# SAED Prototype
-Social Achievement Exposure Detector — prototype dashboard Streamlit.
+# SAED Prototype v3 — Sentence & Paragraph Analysis
 
-## Jalankan lokal
-```bash
-pip install -r requirements.txt
-streamlit run app.py
-```
+Versi ini mengubah analisis dari keyword-only menjadi **sentence + paragraph context**.
 
-## Deploy ke Streamlit Community Cloud
-1. Buat repository GitHub baru.
-2. Upload `app.py` dan `requirements.txt`.
-3. Buka Streamlit Community Cloud.
-4. Pilih repository → `app.py` → Deploy.
-5. URL akan berbentuk `https://nama-aplikasi.streamlit.app`.
+Fitur:
+- segmentasi kalimat
+- evidence berbasis pola kalimat
+- hubungan antar-kalimat
+- kontras (tetapi, namun, sedangkan, dll.)
+- sebab-akibat (karena, sehingga, setelah, dll.)
+- relasi diri vs orang lain
+- evidence snippet per indikator
+- rekomendasi kondisional berdasarkan indikator
 
-Catatan: model NLP di versi ini adalah rule-based prototype, bukan diagnosis psikologis.
+Catatan: tetap merupakan prototype rule-based, bukan diagnosis psikologis. Untuk produksi disarankan menambahkan model NLP/transformer dan dataset berlabel.
