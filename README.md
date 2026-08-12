@@ -1,6 +1,18 @@
-# SAED — Social Achievement Exposure Detector
+# SAED v9 — Detailed Semantic Pattern Analyzer
 
-Versi perbaikan detector berbasis rule/context untuk bahasa Indonesia.
+SAED adalah prototype NLP berbasis aturan untuk menganalisis pola bahasa Indonesia yang berkaitan dengan:
+- Achievement Exposure
+- Social Comparison
+- Perceived Lagging
+- Negative Self-Evaluation
+- Future Uncertainty
+
+## Struktur
+- `app.py` — program utama
+- `requirements.txt` — dependency
+- `assets/logo.svg` — logo futuristik minimalis
+- `docs/01-alur.md` — alur analisis
+- `docs/02-indikator.md` — definisi indikator
 
 ## Menjalankan
 ```bash
@@ -8,4 +20,4 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-Detector tidak hanya mencari satu kata. Skor dihitung dari kombinasi kata diri, orang lain, pencapaian, perbandingan, lagging, ketidakpastian masa depan, serta evaluasi diri negatif. Bukti kalimat dan kata/frasa yang terdeteksi ditampilkan pada hasil.
+Catatan: hasil adalah analisis pola bahasa berbasis aturan, bukan diagnosis psikologis.
