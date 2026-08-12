@@ -323,5 +323,6 @@ def detail(k, v, evidence_items):
     if not evidence_items:
         return base + " Belum ada bukti kalimat yang cukup kuat."
     strongest = max(evidence_items, key=lambda x: x["weight"])
+    text = strongest["text"]
     if k == "Achievement Exposure":
-        return f"Kalimat menunjukkan paparan terhada
+        return "Kalimat"
