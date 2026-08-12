@@ -228,7 +228,7 @@ def analyze_text(t):
 
     total = sum(scores.values())
     overall = round(total / len(scores) * 100)
-    peak = max(scores, key=scores.get) if total else "Belum terdeteksi"
+    peak = max(scores, key=scores.get) if total > 0 else "Belum terdeteksi"
     level = "Rendah" if overall < 35 else "Sedang" if overall < 65 else "Tinggi"
     return scores, evidence, overall, level, peak, sentences, links
 
@@ -297,14 +297,18 @@ st.markdown('</div>', unsafe_allow_html=True)
 # ---------- Deep analysis ----------
 st.markdown('<div class="card">', unsafe_allow_html=True)
 st.markdown("### 🔍 Analisis Mendalam")
-peak_hits = evidence.get(peak, []) if peak != "Belum dianalisis" else []
+peak_hits = evidence.get(peak, []) if peak not in ("Belum dianalisis", "Belum terdeteksi") else []
+peak_evidence_text = (
+    " | ".join([f"Kalimat {n}: {sent}" for n, sent in peak_hits])
+    if peak_hits else "Belum ada bukti kalimat spesifik."
+)
 patterns = [
-("🔵 Pola Utama", f"Indikator tertinggi: {peak} ({scores.get(peak,0):.2f}). Bukti bahasa: {', '.join(peak_hits) if peak_hits else 'belum ada bukti frasa spesifik'}."),
+("🔵 Pola Utama", f"Indikator tertinggi: {peak} ({scores.get(peak,0):.2f}). Bukti kalimat: {peak_evidence_text}"),
 ("🟠 Pembedaan Indikator", "Achievement Exposure hanya mengukur penyebutan/paparan terhadap pencapaian orang lain. Social Comparison baru naik jika teks menunjukkan tindakan atau penilaian membandingkan diri dengan orang lain."),
 ("🟣 Konteks & Negasi", "Kata seperti 'tidak takut' atau 'tidak tertinggal' tidak seharusnya dihitung sama dengan pernyataan positif yang menunjukkan kekhawatiran. Prototype ini menggunakan pemeriksaan negasi sederhana."),
 ("🟢 Batasan", "Skor berasal dari rule-based keyword/phrase matching. Untuk akurasi produksi, sistem sebaiknya dilatih dan diuji dengan dataset berlabel serta evaluasi precision, recall, F1, dan confusion matrix.")
 ]
-for title,body in patterns:
+for title, body in patterns:
     st.markdown(f"<div class='insight'><b>{title}</b><br>{body}</div>",unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)
 
@@ -349,4 +353,3 @@ with st.expander("🔎 Lihat proses analisis kalimat & paragraf"):
         st.caption("Belum ada teks yang dianalisis.")
 
 st.markdown("<div style='text-align:center;color:#66759a;padding:25px'>SAED • Social Achievement Exposure Detector • Prototype NLP</div>",unsafe_allow_html=True)
-  
