@@ -1051,6 +1051,602 @@ with g1:
             textinfo="none"
         )
     )
-
     gauge.update_layout(
-        hei
+        height=270,
+        margin=dict(
+            l=0,
+            r=0,
+            t=0,
+            b=0
+        ),
+        paper_bgcolor=(
+            "rgba(0,0,0,0)"
+        ),
+        showlegend=False,
+        annotations=[
+            dict(
+                text=(
+                    f"<b>{overall}%</b>"
+                    f"<br>"
+                    f"<span style='font-size:15px'>"
+                    f"{level}"
+                    f"</span>"
+                ),
+                x=0.5,
+                y=0.5,
+                showarrow=False,
+                font=dict(
+                    size=30,
+                    color="white"
+                )
+            )
+        ]
+    )
+
+    st.plotly_chart(
+        gauge,
+        use_container_width=True,
+        config={
+            "displayModeBar": False
+        }
+    )
+
+
+with g2:
+
+    st.markdown(
+        f"""
+        <div class="metric">
+
+        <b>Indikator Terkuat</b>
+
+        <h3>
+        {html.escape(peak)}
+        </h3>
+
+        <span class="badge">
+        {overall}% · {level}
+        </span>
+
+        <p class="small">
+        {html.escape(
+            INFO.get(
+                peak,
+                "Belum ada indikator kuat."
+            )
+        )}
+        </p>
+
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+with g3:
+
+    st.markdown(
+        f"""
+        <div class="metric">
+
+        <b>Ringkasan</b>
+
+        <p>
+        • {len(reports)} kalimat
+        </p>
+
+        <p>
+        • {result["patterns"]} pola
+        </p>
+
+        <p>
+        • {sum(emotions.values())}
+        sinyal emosi
+        </p>
+
+        <p>
+        • {len(contexts)}
+        konteks
+        </p>
+
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+# ============================================================
+# PROFILE INDICATORS
+# ============================================================
+
+st.markdown(
+    "### 3 · Profil 5 Indikator"
+)
+
+
+labels = list(LEX)
+
+values = [
+    round(
+        scores[key] * 100
+    )
+    for key in labels
+]
+
+
+chart = go.Figure(
+    go.Bar(
+        x=values,
+        y=labels,
+        orientation="h",
+        text=[
+            f"{value}%"
+            for value in values
+        ],
+        textposition="outside",
+        marker=dict(
+            color=[
+                "#20cfff",
+                "#ff6680",
+                "#8b5cf6",
+                "#f6ad55",
+                "#22c4ca"
+            ]
+        )
+    )
+)
+
+
+chart.update_xaxes(
+    range=[0, 105],
+    dtick=20,
+    ticksuffix="%",
+    gridcolor="#1a2d56"
+)
+
+
+chart.update_layout(
+    height=330,
+    margin=dict(
+        l=0,
+        r=45,
+        t=10,
+        b=10
+    ),
+    paper_bgcolor=(
+        "rgba(0,0,0,0)"
+    ),
+    plot_bgcolor=(
+        "rgba(0,0,0,0)"
+    ),
+    font_color="#dce7ff",
+    showlegend=False
+)
+
+
+st.plotly_chart(
+    chart,
+    use_container_width=True,
+    config={
+        "displayModeBar": False
+    }
+)
+
+
+# ============================================================
+# DETAILED SENTENCE ANALYSIS
+# ============================================================
+
+st.markdown(
+    "### 4 · Analisis Pola Kalimat Rinci"
+)
+
+
+for report in reports:
+
+    st.markdown(
+        f"""
+        <div class="sentence">
+
+        <b>
+        Kalimat {report["index"]}
+        </b>
+
+        <br>
+
+        {html.escape(
+            report["text"]
+        )}
+
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    if report["rules"]:
+
+        for (
+            name,
+            confidence,
+            found,
+            description
+        ) in report["rules"]:
+
+            st.markdown(
+                f"""
+                <div class="pattern">
+
+                <span class="dot"></span>
+
+                <div>
+
+                <b>
+                {html.escape(name)}
+                </b>
+
+                <span class="badge">
+                {round(confidence * 100)}%
+                </span>
+
+                <br>
+
+                <span class="small">
+                {html.escape(description)}
+                </span>
+
+                <br>
+
+                <span class="small">
+                <b>Pemicu:</b>
+                {html.escape(
+                    ", ".join(found)
+                )}
+                </span>
+
+                </div>
+
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+    else:
+
+        st.caption(
+            "↳ Belum ada pola kuat pada kalimat ini."
+        )
+
+
+# ============================================================
+# EVIDENCE
+# ============================================================
+
+st.markdown(
+    "### 5 · Bukti, Emosi & Konteks"
+)
+
+
+left, right = st.columns(2)
+
+
+with left:
+
+    st.markdown(
+        "<div class='card'>"
+        "<h4>🔎 Bukti Deteksi</h4>",
+        unsafe_allow_html=True
+    )
+
+    found_any = False
+
+    for key in labels:
+
+        percentage = round(
+            scores[key] * 100
+        )
+
+        if percentage == 0:
+            continue
+
+        found_any = True
+
+        st.markdown(
+            f"""
+            <div class="evidence">
+
+            <b>
+            {html.escape(key)}
+            </b>
+
+            <span style="float:right">
+            {percentage}%
+            </span>
+
+            <br>
+
+            <span class="small">
+            {html.escape(INFO[key])}
+            </span>
+
+            <br>
+
+            <span class="small">
+            <b>Frasa:</b>
+            {html.escape(
+                ", ".join(
+                    result["triggers"][key]
+                )
+                or "—"
+            )}
+            </span>
+
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        with st.expander(
+            "Lihat kalimat bukti · "
+            + key
+        ):
+
+            for number, sentence in result[
+                "evidence"
+            ][key]:
+
+                st.write(
+                    f"Kalimat {number}: "
+                    f"{sentence}"
+                )
+
+    if not found_any:
+
+        st.caption(
+            "Belum ada indikator kuat."
+        )
+
+    st.markdown(
+        "</div>",
+        unsafe_allow_html=True
+    )
+
+
+# ============================================================
+# EMOTION + CONTEXT
+# ============================================================
+
+with right:
+
+    st.markdown(
+        "<div class='card'>"
+        "<h4>🧠 Emosi</h4>",
+        unsafe_allow_html=True
+    )
+
+    if emotions:
+
+        total = sum(
+            emotions.values()
+        )
+
+        for name, count in emotions.most_common():
+
+            st.progress(
+                count / total,
+                text=(
+                    f"{name} · "
+                    f"{round(count / total * 100)}%"
+                )
+            )
+
+    else:
+
+        st.caption(
+            "Belum ada sinyal emosi kuat."
+        )
+
+
+    st.markdown(
+        "<h4>🌐 Konteks</h4>",
+        unsafe_allow_html=True
+    )
+
+
+    if contexts:
+
+        for name, count in contexts.most_common():
+
+            st.markdown(
+                f"""
+                <div class="context">
+
+                <b>
+                {html.escape(name)}
+                </b>
+
+                <br>
+
+                <span class="small">
+                {count} sinyal kata/frasa
+                </span>
+
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+    else:
+
+        st.caption(
+            "Belum ada konteks utama."
+        )
+
+
+    st.markdown(
+        "</div>",
+        unsafe_allow_html=True
+    )
+
+
+# ============================================================
+# INSIGHT & RECOMMENDATION
+# ============================================================
+
+st.markdown(
+    "### 6 · Insight & Saran"
+)
+
+
+left, right = st.columns(2)
+
+
+active_keys = [
+    key
+    for key, value in ranked
+    if value >= 0.35
+]
+
+
+with left:
+
+    st.markdown(
+        "<div class='card'>"
+        "<h4>💡 Insight Utama</h4>",
+        unsafe_allow_html=True
+    )
+
+    if overall:
+
+        st.write(
+            f"Pola paling kuat: "
+            f"**{peak} ({overall}%)**."
+        )
+
+        if (
+            "Social Comparison"
+            in active_keys
+            and
+            "Perceived Lagging"
+            in active_keys
+        ):
+
+            st.info(
+                "Terlihat hubungan antara "
+                "membandingkan diri dengan "
+                "orang lain dan merasa tertinggal."
+            )
+
+        elif (
+            "Achievement Exposure"
+            in active_keys
+            and
+            "Social Comparison"
+            in active_keys
+        ):
+
+            st.info(
+                "Pencapaian orang lain tampak "
+                "menjadi bahan pembanding "
+                "terhadap diri sendiri."
+            )
+
+        elif (
+            "Future Uncertainty"
+            in active_keys
+        ):
+
+            st.info(
+                "Ada sinyal ketidakpastian "
+                "atau kekhawatiran mengenai "
+                "masa depan."
+            )
+
+    else:
+
+        st.write(
+            "Belum ada pola kuat yang "
+            "terdeteksi. Tambahkan beberapa "
+            "kalimat yang memiliki konteks "
+            "lebih jelas."
+        )
+
+    st.markdown(
+        "</div>",
+        unsafe_allow_html=True
+    )
+
+
+with right:
+
+    st.markdown(
+        "<div class='tip'>"
+        "<h4>🌱 Saran yang Sesuai</h4>",
+        unsafe_allow_html=True
+    )
+
+    recommendations = []
+
+    for key in active_keys:
+
+        recommendations.extend(
+            RECS[key]
+        )
+
+    if not recommendations:
+
+        recommendations = [
+
+            "Gunakan milestone pribadi "
+            "yang spesifik untuk mengukur progres.",
+
+            "Pisahkan fakta pencapaian "
+            "orang lain dari penilaian "
+            "terhadap dirimu.",
+
+            "Catat satu kemajuan kecil "
+            "yang sudah terjadi minggu ini."
+        ]
+
+    for index, recommendation in enumerate(
+        recommendations[:7],
+        1
+    ):
+
+        st.markdown(
+            f"**{index}.** {recommendation}"
+        )
+
+    st.markdown(
+        "</div>",
+        unsafe_allow_html=True
+    )
+
+
+# ============================================================
+# FOOTER
+# ============================================================
+
+st.markdown(
+    """
+    <div style="
+        text-align:center;
+        color:#7185ad;
+        padding:25px;
+    ">
+
+    ◈ <b>SAED v9</b>
+    · Detailed Semantic Pattern Analyzer
+
+    <br>
+
+    <span class="small">
+    Rule-based NLP,
+    bukan diagnosis psikologis
+    atau penilaian klinis.
+    </span>
+
+    </div>
+    """,
+    unsafe_allow_html=True
+    )
+    
