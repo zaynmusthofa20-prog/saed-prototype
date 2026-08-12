@@ -444,4 +444,4 @@ for gcol, (glabel, gvalue) in zip(gcols, scores.items()):
             annotations=[dict(
                 text=f"<b>{gpct}%</b><br><span style='font-size:10px'>{glabel}</span>",
                 x=0.5, y=0.5, showarrow=False,
-                font)
+                font)]
