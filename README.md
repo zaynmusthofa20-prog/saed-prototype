@@ -1,15 +1,11 @@
-# SAED Prototype v2.0 — Sentence Responsive
+# SAED — Social Achievement Exposure Detector
 
-Versi ini dibuat ulang dari prototype terbaru dengan fokus pada tampilan hasil seperti referensi:
-- Grafik Ringkasan 5 indikator.
-- Predikat Rendah/Sedang/Parah.
-- Detail setiap indikator.
-- Bukti kalimat yang memicu indikator.
-- Analisis pola antar-kalimat/paragraf.
-- Saran personal yang berubah berdasarkan kalimat, indikator, tingkat skor, kata konteks, dan kombinasi indikator.
-- Dukungan konteks negasi seperti tidak/belum.
-- Intensifier seperti sangat/terlalu/sering ikut memengaruhi kekuatan pola.
-- Session state agar hasil tidak hilang setelah rerun.
-- Tidak memakai baseline skor tinggi ketika teks tidak memiliki bukti indikator.
+Versi perbaikan detector berbasis rule/context untuk bahasa Indonesia.
 
-Catatan: SAED adalah prototipe analisis bahasa, bukan alat diagnosis psikologis.
+## Menjalankan
+```bash
+pip install -r requirements.txt
+streamlit run app.py
+```
+
+Detector tidak hanya mencari satu kata. Skor dihitung dari kombinasi kata diri, orang lain, pencapaian, perbandingan, lagging, ketidakpastian masa depan, serta evaluasi diri negatif. Bukti kalimat dan kata/frasa yang terdeteksi ditampilkan pada hasil.
