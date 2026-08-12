@@ -8,7 +8,7 @@ import plotly.graph_objects as go
 # =========================================================
 st.set_page_config(
     page_title="SAED - Social Achievement Exposure Detector",
-    page_icon="🧠",
+    page_icon="­ЪДа",
     layout="centered"
 )
 
@@ -202,10 +202,9 @@ st.markdown("""
 # =========================================================
 st.markdown("""
 <div class="top-header">
-    <div class="logo-title">🧠 SAED</div>
+    <div class="logo-title">­ЪДа SAED</div>
     <div class="subtitle">
-        Social Achievement Exposure Detector
-        · Prototype NLP
+        Social Achievement Exposure Detector ┬и Prototype NLP
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -214,7 +213,7 @@ st.markdown("""
 # INPUT
 # =========================================================
 st.markdown(
-    '<div class="section-title">📝 Masukkan teks yang ingin dianalisis</div>',
+    '<div class="section-title">­ЪЊЮ Masukkan teks yang ingin dianalisis</div>',
     unsafe_allow_html=True
 )
 
@@ -232,14 +231,14 @@ col1, col2 = st.columns([3, 1])
 
 with col1:
     analyze = st.button(
-        "🔎  ANALISIS TEKS  →",
+        "­Ъћј  ANALISIS TEKS  Рєњ",
         use_container_width=True,
         type="primary"
     )
 
 with col2:
     reset = st.button(
-        "↻  Reset",
+        "Рє╗  Reset",
         use_container_width=True
     )
 
@@ -318,7 +317,6 @@ def clean_text(text):
 
 def calculate_scores(text):
     text = clean_text(text)
-
     scores = {}
 
     for name, data in INDICATORS.items():
@@ -328,7 +326,6 @@ def calculate_scores(text):
             if keyword in text:
                 hits += 1
 
-        # Normalisasi skor
         score = min(hits / 4, 1.0)
         scores[name] = round(score, 2)
 
@@ -419,11 +416,8 @@ ADVICE = {
 
 def get_advice(scores):
     strongest = max(scores, key=scores.get)
-
-    # Ambil saran utama dari indikator tertinggi
     advice = ADVICE[strongest].copy()
 
-    # Jika level cukup tinggi, tambahkan saran umum
     if scores[strongest] >= 0.70:
         advice.append(
             "Pertimbangkan untuk mengambil jeda dari konten yang memicu tekanan "
@@ -439,7 +433,7 @@ def get_advice(scores):
 if analyze:
 
     if not text.strip():
-        st.warning("⚠️ Silakan masukkan teks terlebih dahulu.")
+        st.warning("Рџа№ИЈ Silakan masukkan teks terlebih dahulu.")
         st.stop()
 
     scores = calculate_scores(text)
@@ -455,9 +449,10 @@ if analyze:
     # =====================================================
     # HASIL ANALISIS
     # =====================================================
-    st.markdown("""
-    <div class="section-title">📊 Hasil Analisis</div>
-    """, unsafe_allow_html=True)
+    st.markdown(
+        '<div class="section-title">­ЪЊі Hasil Analisis</div>',
+        unsafe_allow_html=True
+    )
 
     col1, col2 = st.columns([1, 1.7])
 
@@ -477,7 +472,7 @@ if analyze:
     with col2:
         st.markdown(f"""
         <div class="result-card" style="margin-top:0;">
-            <div class="result-title">📈 Pola yang terdeteksi</div>
+            <div class="result-title">­ЪЊѕ Pola yang terdeteksi</div>
             <div class="pattern-badge">{pattern}</div>
             <p style="color:#c7cee3;line-height:1.5;">
                 Hasil menunjukkan indikator yang paling menonjol adalah
@@ -491,7 +486,7 @@ if analyze:
     # DIAGRAM BATANG
     # =====================================================
     st.markdown(
-        '<div class="section-title">📊 Ringkasan Indikator</div>',
+        '<div class="section-title">­ЪЊі Ringkasan Indikator</div>',
         unsafe_allow_html=True
     )
 
@@ -556,7 +551,7 @@ if analyze:
     # DETAIL INDIKATOR
     # =====================================================
     st.markdown(
-        '<div class="section-title">☷ Detail Indikator</div>',
+        '<div class="section-title">Рўи Detail Indikator</div>',
         unsafe_allow_html=True
     )
 
@@ -592,7 +587,7 @@ if analyze:
     # SARAN
     # =====================================================
     st.markdown(
-        '<div class="section-title">🌱 Saran yang sesuai</div>',
+        '<div class="section-title">­Ъї▒ Saran yang sesuai</div>',
         unsafe_allow_html=True
     )
 
@@ -601,7 +596,7 @@ if analyze:
     st.markdown("""
     <div class="advice-box">
         <div style="font-size:1.35rem;font-weight:800;">
-            🌱 Rekomendasi personal
+            ­Ъї▒ Rekomendasi personal
         </div>
         <div style="color:#bdebe4;margin:.25rem 0 .7rem;">
             Berdasarkan indikator yang paling menonjol:
@@ -610,11 +605,10 @@ if analyze:
 
     for advice in advice_list:
         st.markdown(
-            f'<div class="advice-item">✓ &nbsp; {advice}</div>',
+            f'<div class="advice-item">РюЊ &nbsp; {advice}</div>',
             unsafe_allow_html=True
         )
 
-    # Quote berbeda berdasarkan indikator
     quotes = {
         "Achievement Exposure":
             "Keberhasilan orang lain bukan bukti bahwa kamu gagal.",
@@ -629,7 +623,7 @@ if analyze:
     }
 
     st.markdown(
-        f'<div class="quote-box">💡 “{quotes[pattern]}”</div>',
+        f'<div class="quote-box">­ЪњА Рђю{quotes.get(pattern, "Fokus pada perjalananmu sendiri.")}РђЮ</div>',
         unsafe_allow_html=True
     )
 
@@ -638,7 +632,7 @@ if analyze:
     # =====================================================
     # PREPROCESSING
     # =====================================================
-    with st.expander("🔎 Lihat teks setelah preprocessing"):
+    with st.expander("­Ъћј Lihat teks setelah preprocessing"):
         st.code(clean_text(text))
 
 # =========================================================
@@ -646,7 +640,7 @@ if analyze:
 # =========================================================
 st.markdown("""
 <div class="footer">
-    SAED Prototype • NLP berbasis aturan untuk penelitian KTI
+    SAED Prototype Рђб NLP berbasis aturan untuk penelitian KTI
     <br>
     Bukan alat diagnosis psikologis.
 </div>
