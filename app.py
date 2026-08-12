@@ -331,4 +331,4 @@ st.markdown('</div>', unsafe_allow_html=True)
 # ---------- Recommendations ----------
 st.markdown('<div class="tip">', unsafe_allow_html=True)
 st.markdown("### 🌱 Saran yang sesuai")
-st.write("Berdasarkan pola analisis
+st.write("Berdasarkan pola analisis")
