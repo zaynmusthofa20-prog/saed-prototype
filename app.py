@@ -23,11 +23,30 @@ div[data-testid="stTextArea"] textarea { background:#0c1532 !important; color:#e
 .stButton > button { border-radius:12px; font-weight:700; min-height:46px; }
 div[data-testid="stMetric"] { background:#0d1735; border:1px solid #213665; padding:12px; border-radius:14px; }
 .insight { background:#0c1836; border:1px solid #223968; border-radius:15px; padding:14px 16px; margin:8px 0; }
-.tip { background:linear-gradient(90deg,#073b3d,#123c3d); border:1px solid #087f79; border-radius:18px; padding:18px; }
+.tip { background:linear-gradient(135deg,#073b3d,#123c3d 55%,#173b65); border:1px solid #0aa69b; border-radius:18px; padding:18px; box-shadow:0 10px 30px rgba(0,0,0,.18); }
+.suggestion { border-radius:14px; padding:12px 14px; margin:8px 0; border:1px solid rgba(255,255,255,.10); background:linear-gradient(90deg,rgba(15,34,70,.95),rgba(13,24,52,.95)); }
+.suggestion .tag { display:inline-block; border-radius:12px; padding:3px 8px; font-size:.72rem; font-weight:800; margin-right:7px; }
+.tag-blue{background:#214bd6;color:#dce6ff}.tag-orange{background:#a95d10;color:#fff0cf}.tag-pink{background:#a92870;color:#ffe4f3}.tag-purple{background:#5c38a8;color:#efe5ff}.tag-cyan{background:#087f93;color:#d9fbff}.tag-green{background:#087b63;color:#d8fff2}
+.detail-card{border-radius:17px;padding:15px 16px;margin:8px 0;background:linear-gradient(145deg,#101f49,#0b1531);border:1px solid #263d73;box-shadow:0 8px 24px rgba(0,0,0,.15)}
+.evidence-chip{display:inline-block;margin:4px 4px 0 0;padding:4px 8px;border-radius:10px;background:#182d5e;color:#b9d5ff;font-size:.76rem}
+.score-pill{float:right;padding:4px 9px;border-radius:12px;font-size:.75rem;font-weight:800}
+.ind-icon{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:13px;margin-right:7px;vertical-align:middle;background:linear-gradient(145deg,rgba(255,255,255,.10),rgba(255,255,255,.03));border:1px solid rgba(255,255,255,.14);box-shadow:inset 0 0 18px rgba(255,255,255,.04),0 5px 18px rgba(0,0,0,.20);position:relative;overflow:hidden}
+.ind-icon:before{content:"";position:absolute;inset:1px;border-radius:12px;background:radial-gradient(circle at 30% 20%,rgba(255,255,255,.18),transparent 48%);pointer-events:none}
+.ind-icon svg{width:27px;height:27px;filter:drop-shadow(0 0 5px currentColor);position:relative;z-index:1}
+.icon-blue{color:#35c9ff;border-color:#247dff66;background:linear-gradient(145deg,#153a86,#091d49)}
+.icon-orange{color:#ffc04d;border-color:#ffad3266;background:linear-gradient(145deg,#714016,#281b10)}
+.icon-pink{color:#ff62b0;border-color:#f2388366;background:linear-gradient(145deg,#711b58,#28132d)}
+.icon-purple{color:#9a74ff;border-color:#7446f566;background:linear-gradient(145deg,#432a8e,#1b1642)}
+.icon-cyan{color:#36e1df;border-color:#22c4ca66;background:linear-gradient(145deg,#125d70,#10263e)}
+.detail-card .ind-icon{width:36px;height:36px;border-radius:11px}
+.detail-card .ind-icon svg{width:23px;height:23px}
+@media(max-width:700px){.ind-icon{width:38px;height:38px;border-radius:12px}.ind-icon svg{width:24px;height:24px}}
+
+
 </style>
 <style>
 .pred {text-align:center;padding:5px 8px;border-radius:14px;font-weight:700;font-size:.78rem;margin-top:4px}
-.pred.high{background:#ff4f65;color:white}.pred.mid{background:#ffbd38;color:#241900}.pred.low{background:#27d79a;color:#06291e}
+.pred.high{background:linear-gradient(135deg,#ff416c,#ff6b35);color:white;box-shadow:0 4px 14px rgba(255,65,108,.28)}.pred.mid{background:linear-gradient(135deg,#ffc107,#ff8f00);color:#241900;box-shadow:0 4px 14px rgba(255,170,0,.24)}.pred.low{background:linear-gradient(135deg,#18d89f,#18b7d8);color:#04251e;box-shadow:0 4px 14px rgba(24,216,159,.22)}
 @media(max-width:700px){
  .block-container{padding-left:.7rem!important;padding-right:.7rem!important;padding-top:.8rem!important}
  .card{padding:15px!important;border-radius:16px!important}
@@ -57,7 +76,7 @@ with st.sidebar:
     st.markdown("ℹ️ Tentang SAED")
     st.markdown("---")
     st.info("SAED adalah prototipe NLP untuk membaca pola bahasa terkait pencapaian sosial, perbandingan diri, kekhawatiran masa depan, dan evaluasi diri.")
-    st.caption("© 2026 SAED • Prototype v1.0")
+    st.caption("© 2026 SAED • Prototype v2.2 • Futuristic Icons")
 
 st.markdown(f"""
 <div class="hero">
@@ -287,6 +306,15 @@ else:
 
 labels=list(scores.keys())
 colors=["#20a9ff","#ffae32","#22c4ca","#7446f5","#f23883"]
+IND_ICON = {
+    "Achievement Exposure": """<span class='ind-icon icon-blue'><svg viewBox='0 0 48 48' aria-hidden='true'><path d='M15 9h18v6h5v3c0 6-4 10-10 11-1 4-4 6-7 7-3-1-6-3-7-7-6-1-10-5-10-11v-3h5z' fill='none' stroke='currentColor' stroke-width='2.6'/><path d='M19 39h10M24 36v-7M12 15H7v2c0 4 3 7 8 8M36 15h5v2c0 4-3 7-8 8' fill='none' stroke='currentColor' stroke-width='2.6' stroke-linecap='round'/><path d='M20 19l4-2 4 2-4 2z' fill='currentColor'/><circle cx='24' cy='14' r='2' fill='none' stroke='currentColor' stroke-width='1.8'/></svg></span>""",
+    "Future Uncertainty": """<span class='ind-icon icon-orange'><svg viewBox='0 0 48 48' aria-hidden='true'><circle cx='24' cy='24' r='15' fill='none' stroke='currentColor' stroke-width='2.6'/><path d='M24 9v-4M39 24h4M24 39v4M9 24H5' stroke='currentColor' stroke-width='2.2' stroke-linecap='round'/><path d='M24 16v8l6 4' fill='none' stroke='currentColor' stroke-width='2.6' stroke-linecap='round'/><path d='M17 18l3-3M31 18l3-3' stroke='currentColor' stroke-width='2' stroke-linecap='round'/><circle cx='24' cy='24' r='2.4' fill='currentColor'/></svg></span>""",
+    "Negative Self-Evaluation": """<span class='ind-icon icon-pink'><svg viewBox='0 0 48 48' aria-hidden='true'><rect x='9' y='7' width='30' height='34' rx='8' fill='none' stroke='currentColor' stroke-width='2.6'/><circle cx='24' cy='20' r='6' fill='none' stroke='currentColor' stroke-width='2.2'/><path d='M15 35c2-6 16-6 18 0M19 19h1M28 19h1M20 23c2 2 6 2 8 0' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round'/><path d='M13 11l-3-3M35 11l3-3' stroke='currentColor' stroke-width='2' stroke-linecap='round'/></svg></span>""",
+    "Perceived Lagging": """<span class='ind-icon icon-purple'><svg viewBox='0 0 48 48' aria-hidden='true'><circle cx='24' cy='24' r='16' fill='none' stroke='currentColor' stroke-width='2.6'/><path d='M24 14v11l7 4' fill='none' stroke='currentColor' stroke-width='2.8' stroke-linecap='round'/><path d='M10 38l-4 4M38 38l4 4M7 24H3M45 24h-4' stroke='currentColor' stroke-width='2.2' stroke-linecap='round'/><path d='M18 8l-2-4M30 8l2-4' stroke='currentColor' stroke-width='2' stroke-linecap='round'/></svg></span>""",
+    "Social Comparison": """<span class='ind-icon icon-cyan'><svg viewBox='0 0 48 48' aria-hidden='true'><circle cx='17' cy='17' r='5' fill='none' stroke='currentColor' stroke-width='2.5'/><circle cx='31' cy='17' r='5' fill='none' stroke='currentColor' stroke-width='2.5'/><path d='M8 35c1-7 5-11 9-11s8 4 9 11M22 35c1-7 5-11 9-11s8 4 9 11' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round'/><path d='M21 17h6M20 14l-3 3 3 3M28 14l3 3-3 3' fill='none' stroke='currentColor' stroke-width='2.1' stroke-linecap='round' stroke-linejoin='round'/><circle cx='24' cy='9' r='2' fill='currentColor'/></svg></span>"""
+}
+IND_TAG={"Achievement Exposure":"blue","Future Uncertainty":"orange","Negative Self-Evaluation":"pink","Perceived Lagging":"purple","Social Comparison":"cyan"}
+IND_SHORT={"Achievement Exposure":"Paparan pencapaian orang lain","Future Uncertainty":"Ketidakpastian masa depan","Negative Self-Evaluation":"Penilaian terhadap diri","Perceived Lagging":"Rasa tertinggal","Social Comparison":"Perbandingan sosial"}
 
 def severity(v):
     return "Rendah" if v < .35 else "Sedang" if v < .65 else "Parah"
@@ -297,116 +325,4 @@ def detail(k, v, evidence_items):
         return base + " Belum ada bukti kalimat yang cukup kuat."
     strongest = max(evidence_items, key=lambda x: x["weight"])
     if k == "Achievement Exposure":
-        return f"Kalimat menunjukkan paparan terhadap pencapaian/keberhasilan pihak lain, terutama pada: “{strongest['text']}”"
-    if k == "Future Uncertainty":
-        return f"Kalimat memuat ketidakpastian atau kekhawatiran mengenai masa depan: “{strongest['text']}”"
-    if k == "Negative Self-Evaluation":
-        return f"Kalimat mengandung evaluasi atau keraguan terhadap kemampuan diri: “{strongest['text']}”"
-    if k == "Perceived Lagging":
-        return f"Kalimat menunjukkan kesan belum mencapai sesuatu atau merasa tertinggal: “{strongest['text']}”"
-    return f"Kalimat menunjukkan perbandingan kondisi diri dengan orang lain: “{strongest['text']}”"
-
-# ---------- Result ----------
-if st.session_state.saed_result:
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    a,b=st.columns([1,2])
-    with a:
-        fig=go.Figure(go.Pie(values=[overall,100-overall], hole=.76, textinfo="none",
-                             marker=dict(colors=["#20cfff","#1a2a58"])))
-        fig.update_layout(height=230, margin=dict(l=0,r=0,t=0,b=0), showlegend=False,
-                          paper_bgcolor="rgba(0,0,0,0)",
-                          annotations=[dict(text=f"<b>{overall}%</b><br>{level}",
-                          x=.5,y=.5,font=dict(size=20,color="white"),showarrow=False)])
-        st.plotly_chart(fig,use_container_width=True,config={"displayModeBar":False})
-    with b:
-        st.markdown("### 📊 Hasil Analisis")
-        st.markdown(f"**Pola dominan:** <span class='badge'>{peak}</span>", unsafe_allow_html=True)
-        st.write(f"Skor keseluruhan menunjukkan tingkat **{level.lower()}** berdasarkan gabungan lima indikator.")
-        if links:
-            for x in links:
-                st.caption("• " + x)
-        st.caption("Catatan: SAED adalah prototipe analisis bahasa, bukan alat diagnosis psikologis.")
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    # ---------- Chart ----------
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.markdown("### 📊 Ringkasan Indikator")
-    st.caption("Semakin tinggi skor, semakin kuat indikasi polanya.")
-    fig=go.Figure()
-    fig.add_trace(go.Bar(
-        x=labels, y=list(scores.values()),
-        text=[f"{v:.2f}" for v in scores.values()],
-        textposition="outside", marker_color=colors
-    ))
-    fig.update_yaxes(range=[0,1.15], dtick=.2)
-    fig.update_layout(height=390, margin=dict(l=20,r=20,t=25,b=95),
-                      paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                      font_color="#dbe6ff", showlegend=False)
-    st.plotly_chart(fig,use_container_width=True,config={"displayModeBar":False})
-
-    # Predicates under the chart, matching the reference style.
-    pc = st.columns(5)
-    for i, (k,v) in enumerate(scores.items()):
-        sev = severity(v)
-        with pc[i]:
-            cls = "high" if sev=="Parah" else ("mid" if sev=="Sedang" else "low")
-            st.markdown(f"<div class='pred {cls}'>{sev}</div>", unsafe_allow_html=True)
-    st.markdown("### ☷ Detail Indikator")
-    cols=st.columns(2)
-    for i,(k,v) in enumerate(scores.items()):
-        with cols[i%2]:
-            sev=severity(v)
-            icon = "🔴" if sev=="Parah" else ("🟠" if sev=="Sedang" else "🟢")
-            st.markdown(
-                f"""<div class="insight"><b>{icon} {k}</b>
-                <span style="float:right"><b>{sev}</b> · {v:.2f}</span>
-                <br><span class="small">{detail(k,v,evidence.get(k,[]))}</span></div>""",
-                unsafe_allow_html=True
-            )
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    # ---------- Sentence evidence ----------
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.markdown("### 🧠 Bukti Kalimat & Pola Paragraf")
-    st.caption("Bagian ini menunjukkan kalimat yang membuat indikator aktif dan membantu menjelaskan mengapa skornya berbeda.")
-    for k,v in scores.items():
-        if evidence.get(k):
-            sev=severity(v)
-            st.markdown(f"**{k} — {sev} ({v:.2f})**")
-            for item in evidence[k][:3]:
-                matches=", ".join(item["matches"][:5])
-                st.markdown(f"> **Kalimat {item['sentence']}:** {item['text']}")
-                st.caption(f"Terpicu oleh: {matches}")
-        else:
-            st.caption(f"• {k}: belum ada bukti kalimat yang kuat.")
-    if links:
-        st.markdown("**Pola paragraf:**")
-        for x in links:
-            st.write("• " + x)
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    # ---------- Deep analysis ----------
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.markdown("### 🔍 Analisis Mendalam")
-    top_two = sorted(scores.items(), key=lambda x:x[1], reverse=True)[:2]
-    if top_two and top_two[0][1] > 0:
-        st.markdown(f"<div class='insight'><b>🔵 Pola utama</b><br>{top_two[0][0]} menjadi indikator paling kuat dengan skor {top_two[0][1]:.2f}.</div>", unsafe_allow_html=True)
-        if len(top_two) > 1 and top_two[1][1] >= .35:
-            st.markdown(f"<div class='insight'><b>🟠 Pola pendamping</b><br>{top_two[1][0]} juga muncul dan dapat memperkuat konteks indikator utama.</div>", unsafe_allow_html=True)
-    if any("tidak" in norm(x) or "belum" in norm(x) for x in sentences):
-        st.markdown("<div class='insight'><b>🧩 Negasi</b><br>Teks mengandung kata negasi seperti “tidak” atau “belum”, sehingga konteks kalimat diperhitungkan agar tidak hanya menghitung kata kunci.</div>", unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    # ---------- Recommendations ----------
-    def make_recommendations(scores, evidence, sentences):
-        recs=[]
-        joined=" ".join(sentences).lower()
-
-        def add(x):
-            if x not in recs: recs.append(x)
-
-        active=sorted([(k,v) for k,v in scores.items() if v>=.35], key=lambda x:x[1], reverse=True)
-
-        # Per-indicator recommendations, personalized by actual evidence.
-        for k,v in active:
-            e
+        return f"Kalimat menunjukkan paparan
